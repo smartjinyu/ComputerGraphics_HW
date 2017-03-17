@@ -2,6 +2,7 @@
 
 This repository is the homework for Computer Graphics, CS550000 in NTHU.
 
+The IDE for projects in this repo is Visual Studio 2015 with Update 3 if no other supplementary instruction.
 
 ### License
 
