@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <cmath>
 
 #include <GL/glew.h>
 #include <freeglut/glut.h>
@@ -48,6 +49,11 @@
 # define GLUT_KEY_t 0x0074
 #endif
 
+#ifndef GLUT_KEY_r
+# define GLUT_KEY_r 0x0072
+#endif
+
+
 
 
 #ifndef max
@@ -87,10 +93,12 @@ int colorMode = 0;
 Matrix4 T = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // cureent translation matrix
 Matrix4 T0 = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // previous translation matrix
 
-Matrix4 S = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // scaling matric
-Matrix4 S0 = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // scaling matric
+Matrix4 S = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // current scaling matric
+Matrix4 S0 = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // previous scaling matric
 
-Matrix4 R = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // rotation matrix
+Matrix4 R = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // current rotation matrix
+Matrix4 R0 = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // previous rotation matrix
+
 Matrix4 N = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // normalization matrix
 
 
@@ -307,8 +315,6 @@ void onDisplay(void)
 		N: Normalization
 	*/
 
-
-
 	Matrix4 M = T*S*R*N;
 	Matrix4 V = Matrix4(
 						1, 0, 0, 0, 
@@ -432,47 +438,72 @@ void onMouse(int who, int state, int x, int y)
 			// record initial coordinate of the moving mouse
 			T0 = T;
 			S0 = S;
+			R0 = R;
 			break;
 		case GLUT_MIDDLE_BUTTON: printf("middle button "); break;
 		case GLUT_RIGHT_BUTTON:  printf("right button  "); break; 
 		case GLUT_WHEEL_UP:
 			printf("wheel up		");
 			if (modeTransformMode == 1) {
+				float stepSize = 1.0 / 40;
 				T = Matrix4(
 					1, 0, 0, 0,
 					0, 1, 0, 0,
-					0, 0, 1, 1.0 / 40,
+					0, 0, 1, stepSize,
 					0, 0, 0, 1)*T0;
 				T0 = T;
-			}else if (modeTransformMode == 2) {
+			}
+			else if (modeTransformMode == 2) {
+				float stepSize = 1.0 / 80;
 				S = Matrix4(
 					1, 0, 0, 0,
 					0, 1, 0, 0,
-					0, 0, 1.0 + 1.0/80, 0,
+					0, 0, 1.0 + stepSize, 0,
 					0, 0, 0, 1)*S0;
 				S0 = S;
+			}
+			else if (modeTransformMode == 3) {
+				float stepSize = 0.1;
+				R = Matrix4(
+					cos(stepSize), -sin(stepSize), 0, 0,
+					sin(stepSize), cos(stepSize), 0, 0,
+					0, 0, 1, 0,
+					0, 0, 0, 1)*R0;
+				R0 = R;
 			}
 			break;
 		case GLUT_WHEEL_DOWN:    
 			if (modeTransformMode == 1) {
 				printf("wheel down			");
 				if (T0[11] > 0) { //do not allow z < 0
+					float stepSize = - 1.0 / 40;
 					T = Matrix4(
 						1, 0, 0, 0,
 						0, 1, 0, 0,
-						0, 0, 1, -1.0 / 40,
+						0, 0, 1, stepSize,
 						0, 0, 0, 1)*T0;
 					T0 = T;
 				}
 			}
 			else if (modeTransformMode == 2) {
+				float stepSize = - 1.0 / 80;
 				S = Matrix4(
 					1, 0, 0, 0,
 					0, 1, 0, 0,
-					0, 0, 1.0 - 1.0 / 80, 0,
+					0, 0, 1.0 + stepSize, 0,
 					0, 0, 0, 1)*S0;
 				S0 = S;
 			}
+			else if (modeTransformMode == 3) {
+				float stepSize = -0.1;
+				R = Matrix4(
+					cos(stepSize), -sin(stepSize), 0, 0,
+					sin(stepSize), cos(stepSize), 0, 0,
+					0, 0, 1, 0,
+					0, 0, 0, 1)*R0;
+				R0 = R;
+			}
+
 			break;
 		default: printf("0x%02X          ", who); break;
 	}
@@ -520,6 +551,24 @@ void onMouseMotion(int x, int y)
 				0, 1.0 + offsetY, 0, 0,
 				0, 0, 1, 0,
 				0, 0, 0, 1)*S0;
+			break;
+		}		
+		case 3: {
+			// object rotation mode
+			float offsetX = (float)(x - mouseX) * 2 / windowWidth;
+			float offsetY = (float)(y - mouseY) * 2 / windowHeight;
+			Matrix4 RX = Matrix4(
+				1, 0, 0, 0,
+				0, cos(offsetY), -sin(offsetY), 0,
+				0, sin(offsetY), cos(offsetY), 0,
+				0, 0, 0, 1);
+			Matrix4 RY = Matrix4(
+				cos(offsetX), 0, sin(offsetX), 0,
+				0, 1, 0, 0,
+				-sin(offsetX), 0, cos(offsetX), 0,
+				0, 0, 0, 1);
+			// be cautious that drag in the window in X direction actually rotation in Y
+			R = RX*RY*R0;
 			break;
 		}
 
@@ -591,7 +640,11 @@ void onKeyboard(unsigned char key, int x, int y)
 		modeTransformMode = 2;
 		printf("Key s pressed: go to OBJECT scale mode\n");
 		break;
-
+	case GLUT_KEY_r:
+		// go to OBJECT rotation mode
+		modeTransformMode = 3;
+		printf("Key r pressed: go to OBJECT rotation mode\n");
+		break;
 	}
 	//printf("\n");
 }
