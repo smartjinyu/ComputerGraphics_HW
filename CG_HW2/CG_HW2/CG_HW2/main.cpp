@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <cmath>
 
+
 #include <GL/glew.h>
 #include <freeglut/glut.h>
 #include "textfile.h"
@@ -53,6 +54,11 @@
 # define GLUT_KEY_r 0x0072
 #endif
 
+#ifndef GLUT_KEY_e
+# define GLUT_KEY_e 0x0065
+#endif
+
+
 
 
 
@@ -99,6 +105,12 @@ Matrix4 S0 = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // previou
 Matrix4 R = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // current rotation matrix
 Matrix4 R0 = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // previous rotation matrix
 
+Vector3 eyePos = Vector3(0, 0, 0);
+Vector3 eyePos0 = Vector3(0, 0, 0);
+
+Vector3 centerPos = Vector3(0, 0, -1);
+Vector3 upVec = Vector3(0, 1, 0);// in fact, this vector should be called as P1P3
+
 Matrix4 N = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // normalization matrix
 
 
@@ -118,6 +130,35 @@ int modeTransformMode = 1;
 
 int windowWidth = 800, windowHeight = 800;
 
+
+Matrix4 getViewTransMatrix() {
+	/*
+	use global parameter eyePos, centerPos, upVec to compute Viewing Transformation Matrix
+	*/
+	Vector3 P1P2 = centerPos - eyePos;
+	Vector3 P1P3 = upVec;
+
+	Vector3 Rz = P1P2.normalize();
+	Vector3 Rx = P1P2.cross(P1P3).normalize();
+	Vector3 Ry = Rx.cross(Rz).normalize();
+
+
+	Matrix4 Rv = Matrix4(
+		Rx[0], Rx[1], Rx[2], 0, // new X axis
+		Ry[0], Ry[1], Ry[2], 0, // new up vector
+		-Rz[0], -Rz[1], -Rz[2], 0,// new direction/forward vector
+		0, 0, 0, 1);
+	Matrix4 Rt = Matrix4(
+		1, 0, 0, -eyePos[0],
+		0, 1, 0, -eyePos[1],
+		0, 0, 1, -eyePos[2],
+		0, 0, 0, 1);
+	//std::cout <<"Rv"<< Rv << std::endl;
+	//std::cout <<"Rt"<< Rt << std::endl;
+	return Rv*Rt;
+
+
+}
 
 void traverseColorModel()
 {
@@ -316,17 +357,14 @@ void onDisplay(void)
 	*/
 
 	Matrix4 M = T*S*R*N;
-	Matrix4 V = Matrix4(
-						1, 0, 0, 0, 
-						0, 1, 0, 0,
-						0, 0, 1, 0,
-						0, 0, 0, 1);
+	Matrix4 V = getViewTransMatrix();
+	//std::cout << "V="<< V << std::endl;
+
 	Matrix4 P = Matrix4(
 						1, 0, 0, 0, 
 						0, 1, 0, 0,
 						0, 0, -1, 0,
 						0, 0, 0, 1);
-
 
 
 	Matrix4 MVP = P*V*M;
@@ -346,6 +384,7 @@ void onDisplay(void)
 	
 	// bind uniform matrix to shader
 	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, mvp);
+
 
 	// draw the array we just bound
 	//glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -439,13 +478,14 @@ void onMouse(int who, int state, int x, int y)
 			T0 = T;
 			S0 = S;
 			R0 = R;
+			eyePos0 = eyePos;
 			break;
 		case GLUT_MIDDLE_BUTTON: printf("middle button "); break;
 		case GLUT_RIGHT_BUTTON:  printf("right button  "); break; 
 		case GLUT_WHEEL_UP:
 			printf("wheel up		");
 			if (modeTransformMode == 1) {
-				float stepSize = 1.0 / 40;
+				float stepSize = 1.0 / 40.0;
 				T = Matrix4(
 					1, 0, 0, 0,
 					0, 1, 0, 0,
@@ -454,7 +494,7 @@ void onMouse(int who, int state, int x, int y)
 				T0 = T;
 			}
 			else if (modeTransformMode == 2) {
-				float stepSize = 1.0 / 80;
+				float stepSize = 1.0 / 80.0;
 				S = Matrix4(
 					1, 0, 0, 0,
 					0, 1, 0, 0,
@@ -471,12 +511,17 @@ void onMouse(int who, int state, int x, int y)
 					0, 0, 0, 1)*R0;
 				R0 = R;
 			}
+			else if (modeTransformMode == 4) {
+				float stepSize = 1.0 / 80.0;
+				eyePos = Vector3(0, 0, stepSize) + eyePos0;
+				eyePos0 = eyePos;
+			}
 			break;
 		case GLUT_WHEEL_DOWN:    
 			if (modeTransformMode == 1) {
 				printf("wheel down			");
 				if (T0[11] > 0) { //do not allow z < 0
-					float stepSize = - 1.0 / 40;
+					float stepSize = - 1.0 / 40.0;
 					T = Matrix4(
 						1, 0, 0, 0,
 						0, 1, 0, 0,
@@ -486,7 +531,7 @@ void onMouse(int who, int state, int x, int y)
 				}
 			}
 			else if (modeTransformMode == 2) {
-				float stepSize = - 1.0 / 80;
+				float stepSize = - 1.0 / 80.0;
 				S = Matrix4(
 					1, 0, 0, 0,
 					0, 1, 0, 0,
@@ -503,7 +548,11 @@ void onMouse(int who, int state, int x, int y)
 					0, 0, 0, 1)*R0;
 				R0 = R;
 			}
-
+			else if (modeTransformMode == 4) {
+				float stepSize = -1.0 / 80.0;
+				eyePos = Vector3(0, 0, stepSize) + eyePos0;
+				eyePos0 = eyePos;
+			}
 			break;
 		default: printf("0x%02X          ", who); break;
 	}
@@ -569,6 +618,13 @@ void onMouseMotion(int x, int y)
 				0, 0, 0, 1);
 			// be cautious that drag in the window in X direction actually rotation in Y
 			R = RX*RY*R0;
+			break;
+		}
+		case 4: {
+			// eye translate mode
+			float offsetX = (float)(x - mouseX)  / (windowWidth*2);
+			float offsetY = (float)(y - mouseY)  / (windowHeight*2);
+			eyePos = Vector3(offsetX, offsetY, 0) + eyePos0;
 			break;
 		}
 
@@ -645,6 +701,12 @@ void onKeyboard(unsigned char key, int x, int y)
 		modeTransformMode = 3;
 		printf("Key r pressed: go to OBJECT rotation mode\n");
 		break;
+	case GLUT_KEY_e:
+		// go to eye translate mode
+		modeTransformMode = 4;
+		printf("Key r pressed: go to EYE translate mode\n");
+		break;
+
 	}
 	//printf("\n");
 }
