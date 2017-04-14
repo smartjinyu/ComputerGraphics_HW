@@ -73,10 +73,13 @@ char filename[numOfModels][100] = { "ColorModels/armadillo12KC.obj",
 "ColorModels/maxplanck20KC.obj",
 "ColorModels/lucy25KC.obj",
 "ColorModels/texturedknot11KC.obj" };
+
 int modelIndex = 0;
 bool solidMode = true;
 int colorMode = 0;
 
+Matrix4 N = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+// normalization matrix, will assign value in traverseColorModel()
 
 
 
@@ -116,18 +119,39 @@ void traverseColorModel()
 	OBJ->position[1] = (maxVal[1] + minVal[1]) / 2.0;
 	OBJ->position[2] = (maxVal[2] + minVal[2]) / 2.0;
 
+	/*use matrix to do normalization
 	// transform the center to (0,0)
 	for (i = 1; i <= (int)OBJ->numvertices; i++) {
 		OBJ->vertices[i * 3 + 0] -= OBJ->position[0];
 		OBJ->vertices[i * 3 + 1] -= OBJ->position[1];
 		OBJ->vertices[i * 3 + 2] -= OBJ->position[2];
 	}
+	*/
 
 	// then fill the array vertices and colors
 	vertices = (GLfloat*)malloc(9 * OBJ->numtriangles * sizeof(GLfloat));
 	colors = (GLfloat*)malloc(9 * OBJ->numtriangles * sizeof(GLfloat));
 
-	GLfloat r = max(maxVal[0] - minVal[0], max(maxVal[1] - minVal[1], maxVal[2] - minVal[2])) / 2.0; // use this to fit the bound of box
+	GLfloat r = max(maxVal[0] - minVal[0], max(maxVal[1] - minVal[1], maxVal[2] - minVal[2])) / 2.0; 
+	// use this to fit the bound of box
+
+	Matrix4 NormalizationTranslation = Matrix4(
+											1,0,0,-OBJ->position[0],
+											0,1,0,-OBJ->position[1],
+											0,0,1,-OBJ->position[2],
+											0,0,0,1);
+	// translation to the center
+
+	Matrix4 NormalizationScaling = Matrix4(
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, r);
+	// scale to [-1,1]
+
+	N = NormalizationScaling * NormalizationTranslation;
+
+
 	int j = 0;
 	for (i = 0, j = 0; i < (int)OBJ->numtriangles; i++, j += 9)
 	{
@@ -146,26 +170,40 @@ void traverseColorModel()
 		vx = OBJ->vertices[indv1 * 3 + 0];
 		vy = OBJ->vertices[indv1 * 3 + 1];
 		vz = OBJ->vertices[indv1 * 3 + 2];
+		vertices[j] = vx;
+		vertices[j + 1] = vy;
+		vertices[j + 2] = vz;
+
+		/* use matrix to do normalization
 		// scale to [-1,1]
 		vertices[j] = vx / r;
 		vertices[j + 1] = vy / r;
 		vertices[j + 2] = vz / r;
+		*/
 
 		vx = OBJ->vertices[indv2 * 3 + 0];
 		vy = OBJ->vertices[indv2 * 3 + 1];
 		vz = OBJ->vertices[indv2 * 3 + 2];
+		vertices[j + 3] = vx;
+		vertices[j + 4] = vy;
+		vertices[j + 5] = vz;
+		/*
 		vertices[j + 3] = vx / r;
 		vertices[j + 4] = vy / r;
 		vertices[j + 5] = vz / r;
-
+		*/
 
 		vx = OBJ->vertices[indv3 * 3 + 0];
 		vy = OBJ->vertices[indv3 * 3 + 1];
 		vz = OBJ->vertices[indv3 * 3 + 2];
+		vertices[j + 6] = vx;
+		vertices[j + 7] = vy;
+		vertices[j + 8] = vz;
+		/*
 		vertices[j + 6] = vx / r;
 		vertices[j + 7] = vy / r;
 		vertices[j + 8] = vz / r;
-
+		*/
 
 		// colors
 		GLfloat c1, c2, c3;
@@ -224,33 +262,30 @@ void onDisplay(void)
 	glEnableVertexAttribArray(iLocPosition);
 	glEnableVertexAttribArray(iLocColor);
 
-	// organize the arrays
-	static GLfloat triangle_color[] = {
-		1.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 1.0f
-	};
-
-	static GLfloat triangle_vertex[] = {
-		 1.0f, -1.0f, 0.0f,
-		 0.0f,  1.0f, 0.0f,
-		-1.0f, -1.0f, 0.0f
-	};
-
 	// TODO:
 	//// Please define the model transformation matrix, viewing transformation matrix, 
 	//// projection transformation matrix
 
 	//MVP
+	/*
+	MVP = P*V*M = P*(Vr*Vt)*(T*S*R*N)
+	P: projection matrix
+	V: viewing matrix
+		Vr: viewing rotation
+		Vt: viewing translation
+	M: model matrix
+		T: model translation
+		S: model scaling
+		R: model rotation
+		N: Normalization
+	*/
+
+
 	Matrix4 T;
 	Matrix4 S;
 	Matrix4 R;
 
-	Matrix4 M = Matrix4(
-						1, 0, 0, -0.5, 
-						0, 1, 0, 0,
-						0, 0, 1, 0,
-						0, 0, 0, 1);
+	Matrix4 M = N;
 	Matrix4 V = Matrix4(
 						1, 0, 0, 0, 
 						0, 1, 0, 0,
@@ -262,9 +297,13 @@ void onDisplay(void)
 						0, 0, -1, 0,
 						0, 0, 0, 1);
 
+
+
 	Matrix4 MVP = P*V*M;
 
 	GLfloat mvp[16];
+
+
 	// row-major ---> column-major
 	mvp[0] = MVP[0];  mvp[4] = MVP[1];   mvp[8]  = MVP[2];    mvp[12] = MVP[3];  
 	mvp[1] = MVP[4];  mvp[5] = MVP[5];   mvp[9]  = MVP[6];    mvp[13] = MVP[7];  
