@@ -44,6 +44,11 @@
 # define GLUT_KEY_s 0x0073
 #endif
 
+#ifndef GLUT_KEY_t
+# define GLUT_KEY_t 0x0074
+#endif
+
+
 
 #ifndef max
 # define max(a,b) (((a)>(b))?(a):(b))
@@ -78,10 +83,30 @@ int modelIndex = 0;
 bool solidMode = true;
 int colorMode = 0;
 
-Matrix4 N = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-// normalization matrix, will assign value in traverseColorModel()
+
+Matrix4 T = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // new translation matrix
+Matrix4 T0 = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // current translation matrix
+
+Matrix4 S = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // scaling matric
+Matrix4 R = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // rotation matrix
+Matrix4 N = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // normalization matrix
 
 
+int mouseX = 0, mouseY = 0;
+// the initial location when mouse start moving
+
+int modeTransformMode = 0;
+/*
+0: default mode (no transform)
+1: OBJECT translate mode
+2: OBJECT scale mode
+3: OBJECT rotate mode
+4: EYE translate mode
+5: CENTER (look at) translate mode
+6: PROJECTION mode
+*/
+
+int windowWidth = 800, windowHeight = 800;
 
 
 void traverseColorModel()
@@ -281,11 +306,8 @@ void onDisplay(void)
 	*/
 
 
-	Matrix4 T;
-	Matrix4 S;
-	Matrix4 R;
 
-	Matrix4 M = N;
+	Matrix4 M = T*S*R*N;
 	Matrix4 V = Matrix4(
 						1, 0, 0, 0, 
 						0, 1, 0, 0,
@@ -410,8 +432,16 @@ void onMouse(int who, int state, int x, int y)
 
 	switch(state)
 	{
-		case GLUT_DOWN: printf("start "); break;
-		case GLUT_UP:   printf("end   "); break;
+		case GLUT_DOWN: 
+			printf("start "); 
+			mouseX = x;
+			mouseY = y;
+			// record initial coordinate of the moving mouse
+			break;
+		case GLUT_UP:   
+			printf("end   ");
+			T0 = T;
+			break;
 	}
 
 	printf("\n");
@@ -419,12 +449,30 @@ void onMouse(int who, int state, int x, int y)
 
 void onMouseMotion(int x, int y)
 {
-	printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
+	//printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
+	switch (modeTransformMode) {
+		case 0:break;
+		case 1:
+			// object translation mode 
+			float offsetX = (float)(x - mouseX)*2/windowWidth;
+			float offsetY = (float)(mouseY - y)*2/windowHeight;
+			// the origin of window coordinate is on the top-left of viewport 
+			// When mouse moving up, y is decreasing
+			//printf("offsetX = %f, offsetY = %f\n", offsetX, offsetY);
+			T = Matrix4(
+					1,0,0, offsetX,
+					0,1,0, offsetY,
+					0,0,1,0,
+					0,0,0,1)*T0;
+			// if do not multiple T0, the translate will always start from the origin
+			// which will discard the previous translate
+			break;
+	}
 }
 
 void onKeyboard(unsigned char key, int x, int y)
 {
-	//printf("%18s(): (%d, %d) key: %c(0x%02X) ", __FUNCTION__, x, y, key, key);
+	printf("%18s(): (%d, %d) key: %c(0x%02X) ", __FUNCTION__, x, y, key, key);
 	switch (key)
 	{
 	case GLUT_KEY_ESC: /* the Esc key */
@@ -482,6 +530,12 @@ void onKeyboard(unsigned char key, int x, int y)
 		// author information
 		//printf("Key c clicked\n");
 		break;
+	case GLUT_KEY_t:
+		// go to OBJECT translate mode
+		modeTransformMode = 1;
+		printf("Key t pressed: go to OBJECT translate mode\n");
+		break;
+
 	}
 	//printf("\n");
 }
@@ -510,6 +564,8 @@ void onKeyboardSpecial(int key, int x, int y){
 void onWindowReshape(int width, int height)
 {
 	printf("%18s(): %dx%d\n", __FUNCTION__, width, height);
+	windowWidth = width;
+	windowHeight = height;
 }
 
 int main(int argc, char **argv) 
@@ -520,7 +576,7 @@ int main(int argc, char **argv)
 
 	// create window
 	glutInitWindowPosition(500, 100);
-	glutInitWindowSize(800, 800);
+	glutInitWindowSize(windowWidth, windowHeight);
 	glutCreateWindow("10420 CS550000 CG HW2");
 
 	glewInit();
