@@ -65,8 +65,8 @@ GLMmodel* OBJ;
 GLfloat* vertices;
 GLfloat* colors;
 
-#define numOfModels 12
-char filename[numOfModels][100] = { "ColorModels/armadillo12KC.obj",
+#define numOfModels 13
+char filename[numOfModels][100] = {"ColorModels/teapot4KC.obj","ColorModels/armadillo12KC.obj",
 "ColorModels/brain18KC.obj",
 "ColorModels/Dino20KC.obj",
 "ColorModels/dragon10KC.obj",
@@ -422,25 +422,44 @@ void onMouse(int who, int state, int x, int y)
 
 	switch(who)
 	{
-		case GLUT_LEFT_BUTTON:   printf("left button   "); break;
+		case GLUT_LEFT_BUTTON:   
+			printf("left button   "); 
+			// this will be called both mouse up and down
+			mouseX = x;
+			mouseY = y;
+			// record initial coordinate of the moving mouse
+			T0 = T;
+			break;
 		case GLUT_MIDDLE_BUTTON: printf("middle button "); break;
 		case GLUT_RIGHT_BUTTON:  printf("right button  "); break; 
-		case GLUT_WHEEL_UP:      printf("wheel up      "); break;
-		case GLUT_WHEEL_DOWN:    printf("wheel down    "); break;
-		default:                 printf("0x%02X          ", who); break;
+		case GLUT_WHEEL_UP:      
+			T = Matrix4(
+				1, 0, 0, 0,
+				0, 1, 0, 0,
+				0, 0, 1, 1.0/40,
+				0, 0, 0, 1)*T0;
+			T0 = T;
+			printf("wheel up		");
+			break;
+		case GLUT_WHEEL_DOWN:    
+			printf("wheel down			");
+			T = Matrix4(
+					1, 0, 0, 0,
+					0, 1, 0, 0,
+					0, 0, 1, -1.0 /40,
+					0, 0, 0, 1)*T0;
+				T0 = T;
+			break;
+		default: printf("0x%02X          ", who); break;
 	}
 
 	switch(state)
 	{
 		case GLUT_DOWN: 
 			printf("start "); 
-			mouseX = x;
-			mouseY = y;
-			// record initial coordinate of the moving mouse
 			break;
 		case GLUT_UP:   
 			printf("end   ");
-			T0 = T;
 			break;
 	}
 
@@ -449,7 +468,7 @@ void onMouse(int who, int state, int x, int y)
 
 void onMouseMotion(int x, int y)
 {
-	//printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
+	printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
 	switch (modeTransformMode) {
 		case 0:break;
 		case 1:
@@ -462,7 +481,7 @@ void onMouseMotion(int x, int y)
 			T = Matrix4(
 					1,0,0, offsetX,
 					0,1,0, offsetY,
-					0,0,1,0,
+					0,0,1, 0,
 					0,0,0,1)*T0;
 			// if do not multiple T0, the translate will always start from the origin
 			// which will discard the previous translate
