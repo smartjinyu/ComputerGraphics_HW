@@ -20,6 +20,31 @@
 # define GLUT_KEY_ESC 0x001B
 #endif
 
+#ifndef GLUT_KEY_h
+# define GLUT_KEY_h 0x0068
+#endif
+
+#ifndef GLUT_KEY_z
+# define GLUT_KEY_z 0x007A
+#endif
+
+#ifndef GLUT_KEY_x
+# define GLUT_KEY_x 0x0078
+#endif
+
+#ifndef GLUT_KEY_w
+# define GLUT_KEY_w 0x0077
+#endif
+
+#ifndef GLUT_KEY_c
+# define GLUT_KEY_c 0x0063
+#endif
+
+#ifndef GLUT_KEY_s
+# define GLUT_KEY_s 0x0073
+#endif
+
+
 #ifndef max
 # define max(a,b) (((a)>(b))?(a):(b))
 # define min(a,b) (((a)<(b))?(a):(b))
@@ -29,37 +54,82 @@
 GLint iLocPosition;
 GLint iLocColor;
 GLint iLocMVP;
+GLint iMode;
 
-char filename[] = "ColorModels/bunny5KC.obj";
 GLMmodel* OBJ;
 GLfloat* vertices;
 GLfloat* colors;
+
+#define numOfModels 12
+char filename[numOfModels][100] = { "ColorModels/armadillo12KC.obj",
+"ColorModels/brain18KC.obj",
+"ColorModels/Dino20KC.obj",
+"ColorModels/dragon10KC.obj",
+"ColorModels/elephant16KC.obj",
+"ColorModels/happy10KC.obj",
+"ColorModels/hippo23KC.obj",
+"ColorModels/igea17KC.obj",
+"ColorModels/lion12KC.obj",
+"ColorModels/maxplanck20KC.obj",
+"ColorModels/lucy25KC.obj",
+"ColorModels/texturedknot11KC.obj" };
+int modelIndex = 0;
+bool solidMode = true;
+int colorMode = 0;
+
+
+
+
 
 void traverseColorModel()
 {
 	int i;
 
-	GLfloat maxVal[3];
-	GLfloat minVal[3];
+	GLfloat minVal[3], maxVal[3];
 
-	// TODO:
-	//// You should traverse the vertices and the colors of each triangle, and 
-	//// then normalize the model to unit size by using transformation matrices. 
-	//// i.e. Each vertex should be bounded in [-1, 1], which will fit the camera clipping window.
+	// the array of vertices have 3*numvertices members, vertices[0] [1] [2] are x,y,z of the first vertice
+	// initialize the min/max value
+	// notice that index of vertice begins from 1, so the valid index range is [1,OBJ->numvertices]
+	maxVal[0] = OBJ->vertices[3 + 0];
+	maxVal[1] = OBJ->vertices[3 + 1];
+	maxVal[2] = OBJ->vertices[3 + 2];
 
+	minVal[0] = OBJ->vertices[3 + 0];
+	minVal[1] = OBJ->vertices[3 + 1];
+	minVal[2] = OBJ->vertices[3 + 2];
 
-	// number of triangles
-	OBJ->numtriangles;
+	// get the max/min value
+	for (i = 2; i <= (int)OBJ->numvertices; i++) {
+		maxVal[0] = max(maxVal[0], OBJ->vertices[i * 3 + 0]);
+		maxVal[1] = max(maxVal[1], OBJ->vertices[i * 3 + 1]);
+		maxVal[2] = max(maxVal[2], OBJ->vertices[i * 3 + 2]);
+		minVal[0] = min(minVal[0], OBJ->vertices[i * 3 + 0]);
+		minVal[1] = min(minVal[1], OBJ->vertices[i * 3 + 1]);
+		minVal[2] = min(minVal[2], OBJ->vertices[i * 3 + 2]);
+	}
 
-	// number of vertices
-	OBJ->numvertices;
+	//printf("max = %f,%f,%f\n", maxVal[0], maxVal[1], maxVal[2]);
+	//printf("min = %f,%f,%f\n", minVal[0], minVal[1], minVal[2]);
 
 	// The center position of the model 
-	OBJ->position[0] = 0;
-	OBJ->position[1] = 0;
-	OBJ->position[2] = 0;
+	OBJ->position[0] = (maxVal[0] + minVal[0]) / 2.0;
+	OBJ->position[1] = (maxVal[1] + minVal[1]) / 2.0;
+	OBJ->position[2] = (maxVal[2] + minVal[2]) / 2.0;
 
-	for(i=0; i<(int)OBJ->numtriangles; i++)
+	// transform the center to (0,0)
+	for (i = 1; i <= (int)OBJ->numvertices; i++) {
+		OBJ->vertices[i * 3 + 0] -= OBJ->position[0];
+		OBJ->vertices[i * 3 + 1] -= OBJ->position[1];
+		OBJ->vertices[i * 3 + 2] -= OBJ->position[2];
+	}
+
+	// then fill the array vertices and colors
+	vertices = (GLfloat*)malloc(9 * OBJ->numtriangles * sizeof(GLfloat));
+	colors = (GLfloat*)malloc(9 * OBJ->numtriangles * sizeof(GLfloat));
+
+	GLfloat r = max(maxVal[0] - minVal[0], max(maxVal[1] - minVal[1], maxVal[2] - minVal[2])) / 2.0; // use this to fit the bound of box
+	int j = 0;
+	for (i = 0, j = 0; i < (int)OBJ->numtriangles; i++, j += 9)
 	{
 		// the index of each vertex
 		int indv1 = OBJ->triangles[i].vindices[0];
@@ -73,46 +143,72 @@ void traverseColorModel()
 
 		// vertices
 		GLfloat vx, vy, vz;
-		vx = OBJ->vertices[indv1*3+0];
-		vy = OBJ->vertices[indv1*3+1];
-		vz = OBJ->vertices[indv1*3+2];
+		vx = OBJ->vertices[indv1 * 3 + 0];
+		vy = OBJ->vertices[indv1 * 3 + 1];
+		vz = OBJ->vertices[indv1 * 3 + 2];
+		// scale to [-1,1]
+		vertices[j] = vx / r;
+		vertices[j + 1] = vy / r;
+		vertices[j + 2] = vz / r;
 
-		vx = OBJ->vertices[indv2*3+0];
-		vy = OBJ->vertices[indv2*3+1];
-		vz = OBJ->vertices[indv2*3+2];
+		vx = OBJ->vertices[indv2 * 3 + 0];
+		vy = OBJ->vertices[indv2 * 3 + 1];
+		vz = OBJ->vertices[indv2 * 3 + 2];
+		vertices[j + 3] = vx / r;
+		vertices[j + 4] = vy / r;
+		vertices[j + 5] = vz / r;
 
-		vx = OBJ->vertices[indv3*3+0];
-		vy = OBJ->vertices[indv3*3+1];
-		vz = OBJ->vertices[indv3*3+2];
+
+		vx = OBJ->vertices[indv3 * 3 + 0];
+		vy = OBJ->vertices[indv3 * 3 + 1];
+		vz = OBJ->vertices[indv3 * 3 + 2];
+		vertices[j + 6] = vx / r;
+		vertices[j + 7] = vy / r;
+		vertices[j + 8] = vz / r;
+
 
 		// colors
 		GLfloat c1, c2, c3;
-		c1 = OBJ->colors[indv1*3+0];
-		c2 = OBJ->colors[indv1*3+1];
-		c3 = OBJ->colors[indv1*3+2];
+		c1 = OBJ->colors[indv1 * 3 + 0];
+		c2 = OBJ->colors[indv1 * 3 + 1];
+		c3 = OBJ->colors[indv1 * 3 + 2];
+		colors[j] = c1;
+		colors[j + 1] = c2;
+		colors[j + 2] = c3;
 
-		c1 = OBJ->colors[indv2*3+0];
-		c2 = OBJ->colors[indv2*3+1];
-		c3 = OBJ->colors[indv2*3+2];
+		c1 = OBJ->colors[indv2 * 3 + 0];
+		c2 = OBJ->colors[indv2 * 3 + 1];
+		c3 = OBJ->colors[indv2 * 3 + 2];
+		colors[j + 3] = c1;
+		colors[j + 4] = c2;
+		colors[j + 5] = c3;
 
-		c1 = OBJ->colors[indv3*3+0];
-		c2 = OBJ->colors[indv3*3+1];
-		c3 = OBJ->colors[indv3*3+2];
+		c1 = OBJ->colors[indv3 * 3 + 0];
+		c2 = OBJ->colors[indv3 * 3 + 1];
+		c3 = OBJ->colors[indv3 * 3 + 2];
+		colors[j + 6] = c1;
+		colors[j + 7] = c2;
+		colors[j + 8] = c3;
+
 	}
+
+
 }
+
 
 void loadOBJModel()
 {
 	// read an obj model here
-	if(OBJ != NULL){
+	if (OBJ != NULL) {
 		free(OBJ);
 	}
-	OBJ = glmReadOBJ(filename);
-	printf("%s\n", filename);
+	OBJ = glmReadOBJ(filename[modelIndex]);
+	printf("%s\n", filename[modelIndex]);
 
 	// traverse the color model
 	traverseColorModel();
 }
+
 
 void onIdle()
 {
@@ -176,15 +272,17 @@ void onDisplay(void)
 	mvp[3] = MVP[12]; mvp[7] = MVP[13];  mvp[11] = MVP[14];   mvp[15] = MVP[15];
 
 	// bind array pointers to shader
-	glVertexAttribPointer(iLocPosition, 3, GL_FLOAT, GL_FALSE, 0, triangle_vertex);
-	glVertexAttribPointer(   iLocColor, 3, GL_FLOAT, GL_FALSE, 0, triangle_color);
+	glVertexAttribPointer(iLocPosition, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+	glVertexAttribPointer(   iLocColor, 3, GL_FLOAT, GL_FALSE, 0, colors);
 	
 	// bind uniform matrix to shader
 	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, mvp);
 
 	// draw the array we just bound
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	//glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDrawArrays(GL_TRIANGLES , 0, 3 * (OBJ->numtriangles));
 
+	
 	glutSwapBuffers();
 }
 
@@ -245,11 +343,15 @@ void setShaders()
 	// link program
 	glLinkProgram(p);
 
-	iLocPosition = glGetAttribLocation (p, "av4position");
-	iLocColor    = glGetAttribLocation (p, "av3color");
-	iLocMVP		 = glGetUniformLocation(p, "mvp");
 
+	// get parameters from shader
 	glUseProgram(p);
+
+	iLocPosition = glGetAttribLocation(p, "av4position");
+	iLocColor = glGetAttribLocation(p, "av3color");
+	iMode = glGetUniformLocation(p, "fmode");
+	glUniform1i(iMode, colorMode);
+
 }
 
 
@@ -281,17 +383,70 @@ void onMouseMotion(int x, int y)
 	printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
 }
 
-void onKeyboard(unsigned char key, int x, int y) 
+void onKeyboard(unsigned char key, int x, int y)
 {
-	printf("%18s(): (%d, %d) key: %c(0x%02X) ", __FUNCTION__, x, y, key, key);
-	switch(key) 
+	//printf("%18s(): (%d, %d) key: %c(0x%02X) ", __FUNCTION__, x, y, key, key);
+	switch (key)
 	{
-		case GLUT_KEY_ESC: /* the Esc key */ 
-			exit(0); 
-			break;
+	case GLUT_KEY_ESC: /* the Esc key */
+		exit(0);
+		break;
+	case GLUT_KEY_h:
+		// show help menu
+		//printf("Key h clicked\n");
+		printf("----------Help Menu----------\n\n");
+		printf("h: show help menu\n");
+		printf("w: switch between solid : wired rendering mode\n");
+		printf("z : move to previous model\n");
+		printf("x : move to next model\n");
+		printf("c : color filter function\n");
+		printf("s : show author information.\n\n");
+		printf("----------Help Menu----------\n");
+		break;
+	case GLUT_KEY_z:
+		// switch to the previous model
+		modelIndex--;
+		if (modelIndex < 0) {
+			modelIndex += numOfModels;
+		}
+		loadOBJModel();
+		printf("switch to previous model\n");
+		break;
+	case GLUT_KEY_x:
+		// switch to the next model
+		printf("switch to next model\n");
+		modelIndex++;
+		if (modelIndex >= numOfModels) {
+			modelIndex -= numOfModels;
+		}
+		loadOBJModel();
+		break;
+	case GLUT_KEY_w:
+		// switch solid/wireframe mode
+		solidMode = !solidMode;
+		if (solidMode) {
+			printf("change to solid mode\n");
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		}
+		else {
+			printf("change to wireframe mode\n");
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		}
+		break;
+	case GLUT_KEY_c:
+		// color filter function
+		printf("change color filter\n");
+		colorMode = (colorMode + 1) % 4;
+		setShaders();
+		break;
+	case GLUT_KEY_s:
+		// author information
+		//printf("Key c clicked\n");
+		break;
 	}
-	printf("\n");
+	//printf("\n");
 }
+
 
 void onKeyboardSpecial(int key, int x, int y){
 	printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
@@ -327,7 +482,7 @@ int main(int argc, char **argv)
 	// create window
 	glutInitWindowPosition(500, 100);
 	glutInitWindowSize(800, 800);
-	glutCreateWindow("10420 CS550000 CG HW2 TA");
+	glutCreateWindow("10420 CS550000 CG HW2");
 
 	glewInit();
 	if(glewIsSupported("GL_VERSION_2_0")){
