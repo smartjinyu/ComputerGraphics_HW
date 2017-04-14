@@ -84,10 +84,12 @@ bool solidMode = true;
 int colorMode = 0;
 
 
-Matrix4 T = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // new translation matrix
-Matrix4 T0 = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // current translation matrix
+Matrix4 T = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // cureent translation matrix
+Matrix4 T0 = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // previous translation matrix
 
 Matrix4 S = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // scaling matric
+Matrix4 S0 = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // scaling matric
+
 Matrix4 R = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // rotation matrix
 Matrix4 N = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // normalization matrix
 
@@ -95,7 +97,7 @@ Matrix4 N = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // normaliz
 int mouseX = 0, mouseY = 0;
 // the initial location when mouse start moving
 
-int modeTransformMode = 0;
+int modeTransformMode = 1;
 /*
 0: default mode (no transform)
 1: OBJECT translate mode
@@ -429,26 +431,48 @@ void onMouse(int who, int state, int x, int y)
 			mouseY = y;
 			// record initial coordinate of the moving mouse
 			T0 = T;
+			S0 = S;
 			break;
 		case GLUT_MIDDLE_BUTTON: printf("middle button "); break;
 		case GLUT_RIGHT_BUTTON:  printf("right button  "); break; 
-		case GLUT_WHEEL_UP:      
-			T = Matrix4(
-				1, 0, 0, 0,
-				0, 1, 0, 0,
-				0, 0, 1, 1.0/40,
-				0, 0, 0, 1)*T0;
-			T0 = T;
+		case GLUT_WHEEL_UP:
 			printf("wheel up		");
-			break;
-		case GLUT_WHEEL_DOWN:    
-			printf("wheel down			");
-			T = Matrix4(
+			if (modeTransformMode == 1) {
+				T = Matrix4(
 					1, 0, 0, 0,
 					0, 1, 0, 0,
-					0, 0, 1, -1.0 /40,
+					0, 0, 1, 1.0 / 40,
 					0, 0, 0, 1)*T0;
 				T0 = T;
+			}else if (modeTransformMode == 2) {
+				S = Matrix4(
+					1, 0, 0, 0,
+					0, 1, 0, 0,
+					0, 0, 1.0 + 1.0/80, 0,
+					0, 0, 0, 1)*S0;
+				S0 = S;
+			}
+			break;
+		case GLUT_WHEEL_DOWN:    
+			if (modeTransformMode == 1) {
+				printf("wheel down			");
+				if (T0[11] > 0) { //do not allow z < 0
+					T = Matrix4(
+						1, 0, 0, 0,
+						0, 1, 0, 0,
+						0, 0, 1, -1.0 / 40,
+						0, 0, 0, 1)*T0;
+					T0 = T;
+				}
+			}
+			else if (modeTransformMode == 2) {
+				S = Matrix4(
+					1, 0, 0, 0,
+					0, 1, 0, 0,
+					0, 0, 1.0 - 1.0 / 80, 0,
+					0, 0, 0, 1)*S0;
+				S0 = S;
+			}
 			break;
 		default: printf("0x%02X          ", who); break;
 	}
@@ -471,21 +495,34 @@ void onMouseMotion(int x, int y)
 	printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
 	switch (modeTransformMode) {
 		case 0:break;
-		case 1:
+		case 1: {
 			// object translation mode 
-			float offsetX = (float)(x - mouseX)*2/windowWidth;
-			float offsetY = (float)(mouseY - y)*2/windowHeight;
+			float offsetX = (float)(x - mouseX) * 2 / windowWidth;
+			float offsetY = (float)(mouseY - y) * 2 / windowHeight;
 			// the origin of window coordinate is on the top-left of viewport 
 			// When mouse moving up, y is decreasing
 			//printf("offsetX = %f, offsetY = %f\n", offsetX, offsetY);
 			T = Matrix4(
-					1,0,0, offsetX,
-					0,1,0, offsetY,
-					0,0,1, 0,
-					0,0,0,1)*T0;
+				1, 0, 0, offsetX,
+				0, 1, 0, offsetY,
+				0, 0, 1, 0,
+				0, 0, 0, 1)*T0;
 			// if do not multiple T0, the translate will always start from the origin
 			// which will discard the previous translate
 			break;
+		}
+		case 2:{
+			// object scaling mode
+			float offsetX = (float)(x - mouseX) * 2 / windowWidth;
+			float offsetY = (float)(y - mouseY) * 2 / windowHeight;
+			S = Matrix4(
+				1.0 + offsetX, 0, 0, 0,
+				0, 1.0 + offsetY, 0, 0,
+				0, 0, 1, 0,
+				0, 0, 0, 1)*S0;
+			break;
+		}
+
 	}
 }
 
@@ -506,7 +543,6 @@ void onKeyboard(unsigned char key, int x, int y)
 		printf("z : move to previous model\n");
 		printf("x : move to next model\n");
 		printf("c : color filter function\n");
-		printf("s : show author information.\n\n");
 		printf("----------Help Menu----------\n");
 		break;
 	case GLUT_KEY_z:
@@ -545,14 +581,15 @@ void onKeyboard(unsigned char key, int x, int y)
 		colorMode = (colorMode + 1) % 4;
 		setShaders();
 		break;
-	case GLUT_KEY_s:
-		// author information
-		//printf("Key c clicked\n");
-		break;
 	case GLUT_KEY_t:
 		// go to OBJECT translate mode
 		modeTransformMode = 1;
 		printf("Key t pressed: go to OBJECT translate mode\n");
+		break;
+	case GLUT_KEY_s:
+		// go to OBJECT scale mode
+		modeTransformMode = 2;
+		printf("Key s pressed: go to OBJECT scale mode\n");
 		break;
 
 	}
