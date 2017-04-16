@@ -177,11 +177,9 @@ Matrix4 getViewTransMatrix() {
 	*/
 	Vector3 P1P2 = centerPos - eyePos;
 	Vector3 P1P3 = upVec;
-
 	Vector3 Rz = P1P2.normalize();
 	Vector3 Rx = P1P2.cross(P1P3).normalize();
 	Vector3 Ry = Rx.cross(Rz).normalize();
-
 
 	Matrix4 Rv = Matrix4(
 		Rx[0], Rx[1], Rx[2], 0, // new X axis
@@ -197,8 +195,6 @@ Matrix4 getViewTransMatrix() {
 	//std::cout <<"Rt"<< Rt << std::endl;
 	//upVec = Ry;
 	return Rv*Rt;
-
-
 }
 
 Matrix4 getPerpectiveMatrix() {
@@ -214,6 +210,7 @@ Matrix4 getPerpectiveMatrix() {
 		0, 0, -1, 0
 	);
 }
+
 Matrix4 getOrthoMatrix() {
 	return Matrix4(
 		2.0/(xmax-xmin),0,0,(xmax+xmin)/(xmin-xmax),
