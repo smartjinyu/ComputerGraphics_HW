@@ -70,6 +70,11 @@
 # define GLUT_KEY_p 0x0070
 #endif
 
+#ifndef GLUT_KEY_i
+# define GLUT_KEY_i 0x0069
+#endif
+
+
 
 
 
@@ -510,9 +515,6 @@ void onDisplay(void)
 	glEnableVertexAttribArray(iLocPosition);
 	glEnableVertexAttribArray(iLocColor);
 
-	// TODO:
-	//// Please define the model transformation matrix, viewing transformation matrix, 
-	//// projection transformation matrix
 
 	//MVP
 	/*
@@ -569,6 +571,9 @@ void onDisplay(void)
 
 	// draw the array we just bound
 	glDrawArrays(GL_TRIANGLES , 0, 3 * (OBJ->numtriangles));
+
+
+	// below are the floors
 	Matrix4 FloorT = Matrix4(
 		1.0, 0, 0, 0,
 		0, 1.0, 0, -1.0,
@@ -667,19 +672,21 @@ void setShaders()
 
 void onMouse(int who, int state, int x, int y)
 {
-	printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
+	//printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
 
 	switch(who)
 	{
 		case GLUT_LEFT_BUTTON:   
-			printf("left button   "); 
+			//printf("left button   "); 
 			break;
-		case GLUT_MIDDLE_BUTTON: printf("middle button "); break;
+		case GLUT_MIDDLE_BUTTON: 
+			//printf("middle button "); 
+			break;
 		case GLUT_RIGHT_BUTTON:  
-			printf("right button  "); 
+			//printf("right button  "); 
 			break; 
 		case GLUT_WHEEL_UP:
-			printf("wheel up		");
+			//printf("wheel up		");
 			if (modeTransformMode == 1) {
 				float stepSize = 1.0 / 40.0;
 				T = Matrix4(
@@ -721,7 +728,7 @@ void onMouse(int who, int state, int x, int y)
 			break;
 		case GLUT_WHEEL_DOWN:    
 			if (modeTransformMode == 1) {
-				printf("wheel down			");
+				//printf("wheel down			");
 				if (T0[11] > 0) { //do not allow z < 0
 					float stepSize = - 1.0 / 40.0;
 					T = Matrix4(
@@ -762,13 +769,15 @@ void onMouse(int who, int state, int x, int y)
 			}
 
 			break;
-		default: printf("0x%02X          ", who); break;
+		default: 
+			//printf("0x%02X          ", who); 
+			break;
 	}
 
 	switch(state)
 	{
 		case GLUT_DOWN: 
-			printf("start "); 
+			//printf("start "); 
 			mouseX = x;
 			mouseY = y;
 			if (who == GLUT_LEFT_BUTTON) {
@@ -779,7 +788,7 @@ void onMouse(int who, int state, int x, int y)
 			}
 			break;
 		case GLUT_UP:   
-			printf("end   ");
+			//printf("end   ");
 			// record initial coordinate of the moving mouse
 			T0 = T;
 			S0 = S;
@@ -796,12 +805,12 @@ void onMouse(int who, int state, int x, int y)
 			break;
 	}
 
-	printf("\n");
+	//printf("\n");
 }
 
 void onMouseMotion(int x, int y)
 {
-	printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
+	//printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
 	switch (modeTransformMode) {
 		case 0:break;
 		case 1: {
@@ -905,11 +914,30 @@ void onKeyboard(unsigned char key, int x, int y)
 		// show help menu
 		//printf("Key h clicked\n");
 		printf("----------Help Menu----------\n\n");
+		printf("***** key board control*****\n");
 		printf("h: show help menu\n");
 		printf("w: switch between solid : wired rendering mode\n");
-		printf("z : move to previous model\n");
-		printf("x : move to next model\n");
-		printf("c : color filter function\n");
+		printf("z: move to previous model\n");
+		printf("x: move to next model\n");
+		printf("c: color filter function\n");
+		printf("o: switch between orthogonal / perspective projection\n");
+		printf("i: showcurrent model name and current control mode\n\n");
+		printf("MODE SWITCHING\n");
+		printf("t: go to OBJECT translate mode\n");
+		printf("s: go to OBJECT scale mode\n");
+		printf("r: go to OBJECT rotate mode\n");
+		printf("e: go to EYE translate mode\n");
+		printf("l: go to CENTER (look at) translate mode\n");
+		printf("p: go to PROJECTION mode\n");
+		printf("***** end of keyboard control *****\n\n");
+		printf("***** mouse control *****\n");
+		printf("mouse drag LEFT: decrease the value on X axis\n");
+		printf("mouse drag RIGHT: increase the value on X axis\n");
+		printf("mouse drag DOWN: decrease the value on Y axis\n");
+		printf("mouse drag UP: increase the value on Y axis\n");
+		printf("mouse wheel DOWN: decrease the value on Z axis\n");
+		printf("mouse wheel UP: increase the value on Z axis\n");
+		printf("***** end of mouse control *****\n\n");
 		printf("----------Help Menu----------\n");
 		break;
 	case GLUT_KEY_z:
@@ -989,6 +1017,17 @@ void onKeyboard(unsigned char key, int x, int y)
 			printf("Key o pressed: switch to perspective projection mode\n");
 		}
 		break;
+	case GLUT_KEY_i:
+		// show current situation
+		printf("Current model name: %s\n",filename[modelIndex]);
+		switch (modeTransformMode) {
+		case 1:
+			printf("Current control mode: object translate mode\n");
+			printf("T matrix is \n");
+			std::cout << T << std::endl;
+			break;
+		}
+		break;
 
 	}
 
@@ -997,22 +1036,22 @@ void onKeyboard(unsigned char key, int x, int y)
 
 
 void onKeyboardSpecial(int key, int x, int y){
-	printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
+	//printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
 	switch(key)
 	{
 		case GLUT_KEY_LEFT:
-			printf("key: LEFT ARROW");
+			//printf("key: LEFT ARROW");
 			break;
 			
 		case GLUT_KEY_RIGHT:
-			printf("key: RIGHT ARROW");
+			//printf("key: RIGHT ARROW");
 			break;
 
 		default:
-			printf("key: 0x%02X      ", key);
+			//printf("key: 0x%02X      ", key);
 			break;
 	}
-	printf("\n");
+	//printf("\n");
 }
 
 
@@ -1032,7 +1071,7 @@ int main(int argc, char **argv)
 	// create window
 	glutInitWindowPosition(500, 100);
 	glutInitWindowSize(windowWidth, windowHeight);
-	glutCreateWindow("10420 CS550000 CG HW2");
+	glutCreateWindow("10420 CS550000 CG HW2 X1052165 Yuchun Jin");
 
 	glewInit();
 	if(glewIsSupported("GL_VERSION_2_0")){
