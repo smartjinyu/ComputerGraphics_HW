@@ -697,7 +697,7 @@ void onMouse(int who, int state, int x, int y)
 				T0 = T;
 			}
 			else if (modeTransformMode == 2) {
-				float stepSize = 1.0 / 80.0;
+				float stepSize = 1.0 / 40.0;
 				S = Matrix4(
 					1, 0, 0, 0,
 					0, 1, 0, 0,
@@ -740,7 +740,7 @@ void onMouse(int who, int state, int x, int y)
 				}
 			}
 			else if (modeTransformMode == 2) {
-				float stepSize = - 1.0 / 80.0;
+				float stepSize = - 1.0 / 40.0;
 				S = Matrix4(
 					1, 0, 0, 0,
 					0, 1, 0, 0,
@@ -904,7 +904,7 @@ void onMouseMotion(int x, int y)
 
 void onKeyboard(unsigned char key, int x, int y)
 {
-	printf("%18s(): (%d, %d) key: %c(0x%02X) ", __FUNCTION__, x, y, key, key);
+	//printf("%18s(): (%d, %d) key: %c(0x%02X) ", __FUNCTION__, x, y, key, key);
 	switch (key)
 	{
 	case GLUT_KEY_ESC: /* the Esc key */
@@ -999,12 +999,12 @@ void onKeyboard(unsigned char key, int x, int y)
 	case GLUT_KEY_l:
 		// go to center translate mode
 		modeTransformMode = 5;
-		printf("Key l pressed: go to center translate mode\n");
+		printf("Key l pressed: go to CENTER translate mode\n");
 		break;
 	case GLUT_KEY_p:
 		// go to center translate mode
 		modeTransformMode = 6;
-		printf("Key p pressed: go to projection mode\n");
+		printf("Key p pressed: go to PROJECTION mode\n");
 		break;
 
 	case GLUT_KEY_o:
@@ -1022,10 +1022,36 @@ void onKeyboard(unsigned char key, int x, int y)
 		printf("Current model name: %s\n",filename[modelIndex]);
 		switch (modeTransformMode) {
 		case 1:
-			printf("Current control mode: object translate mode\n");
-			printf("T matrix is \n");
+			printf("Current control mode: OBJECT translate mode\n");
+			printf("Current T matrix is \n");
 			std::cout << T << std::endl;
 			break;
+		case 2:
+			printf("Current control mode: OBJECT scale mode\n");
+			printf("Current S matrix is \n");
+			std::cout << S << std::endl;
+			break;
+		case 3:
+			printf("Current control mode: OBJECT rotation mode\n");
+			printf("Current R matrix is \n");
+			std::cout << R << std::endl;
+			break;
+		case 4:
+			printf("Current control mode: EYE translate mode\n");
+			printf("Current eye position is \n");
+			std::cout << eyePos << std::endl;
+			break;
+		case 5:
+			printf("Current control mode: CENTER translate mode\n");
+			printf("Current center position is \n");
+			std::cout << centerPos << std::endl;
+			break;
+		case 6:
+			printf("Current control mode: PROJECTION mode\n");
+			printf("Current parameters are \n");
+			printf("left = %f, right = %f, bottom = %f, top = %f, znear = %f, zfar = %f\n",xmin,xmax,ymin,ymax,znear,zfar);
+			break;
+
 		}
 		break;
 
