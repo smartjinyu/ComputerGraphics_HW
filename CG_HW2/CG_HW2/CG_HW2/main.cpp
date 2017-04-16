@@ -58,6 +58,20 @@
 # define GLUT_KEY_e 0x0065
 #endif
 
+#ifndef GLUT_KEY_l
+# define GLUT_KEY_l 0x006C
+#endif
+
+#ifndef GLUT_KEY_o
+# define GLUT_KEY_o 0x006F
+#endif
+
+#ifndef GLUT_KEY_p
+# define GLUT_KEY_p 0x0070
+#endif
+
+
+
 
 
 
@@ -77,8 +91,8 @@ GLMmodel* OBJ;
 GLfloat* vertices;
 GLfloat* colors;
 
-#define numOfModels 13
-char filename[numOfModels][100] = {"ColorModels/teapot4KC.obj","ColorModels/armadillo12KC.obj",
+#define numOfModels 14
+char filename[numOfModels][100] = {"ColorModels/teapot4KC.obj","ColorModels/boxC.obj","ColorModels/armadillo12KC.obj",
 "ColorModels/brain18KC.obj",
 "ColorModels/Dino20KC.obj",
 "ColorModels/dragon10KC.obj",
@@ -105,14 +119,17 @@ Matrix4 S0 = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // previou
 Matrix4 R = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // current rotation matrix
 Matrix4 R0 = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // previous rotation matrix
 
-Vector3 eyePos = Vector3(0, 0, 0);
-Vector3 eyePos0 = Vector3(0, 0, 0);
+Vector3 eyePos = Vector3(0, 0, 2);
+Vector3 eyePos0 = Vector3(0, 0, 2);
 
-Vector3 centerPos = Vector3(0, 0, -1);
+Vector3 centerPos = Vector3(0, 0, 0);
+Vector3 centerPos0 = Vector3(0, 0, 0);
+
 Vector3 upVec = Vector3(0, 1, 0);// in fact, this vector should be called as P1P3
 
 Matrix4 N = Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1); // normalization matrix
-
+float xmin = -1.0, xmax = 1.0, ymin = -1.0, ymax = 1.0, znear = 1.0, zfar = 3.0; // zfar\znear should be positive
+float xmin0 = -1.0, xmax0 = 1.0, ymin0 = -1.0, ymax0 = 1.0, znear0 = 1.0, zfar0 = 3.0;
 
 int mouseX = 0, mouseY = 0;
 // the initial location when mouse start moving
@@ -127,6 +144,15 @@ int modeTransformMode = 1;
 5: CENTER (look at) translate mode
 6: PROJECTION mode
 */
+
+bool orthogonalProjection = true;
+/*
+true: orthogonal projection
+false: perspective projection
+*/
+
+bool leftMouseButton = true;
+// only for onMouseMotion to check which mouse is moving
 
 int windowWidth = 800, windowHeight = 800;
 
@@ -155,9 +181,32 @@ Matrix4 getViewTransMatrix() {
 		0, 0, 0, 1);
 	//std::cout <<"Rv"<< Rv << std::endl;
 	//std::cout <<"Rt"<< Rt << std::endl;
+	//upVec = Ry;
 	return Rv*Rt;
 
 
+}
+
+Matrix4 getPerpectiveMatrix() {
+	// Zfar > Znear > 0
+	// in OpenGL api
+	// Xmax = Right, Xmin = Left
+	// Ymax = Top, Ymin = Bottom
+	// Znear = -Near, Zfar = -far
+	return Matrix4(
+		2.0*znear / (xmax - xmin), 0, (xmax + xmin) / (xmin - xmax), 0,
+		0, 2.0*znear / (ymax - ymin), (ymax + ymin) / (ymin - ymax), 0,
+		0, 0, (zfar+znear) / (znear - zfar), (2.0*zfar*znear) / (znear - zfar),
+		0, 0, -1, 0
+	);
+}
+Matrix4 getOrthoMatrix() {
+	return Matrix4(
+		2.0/(xmax-xmin),0,0,(xmax+xmin)/(xmin-xmax),
+		0,2.0/(ymax-ymin),0,(ymax+ymin)/(ymin-ymax),
+		0,0,2.0/(znear-zfar),(zfar+znear)/(znear-zfar),
+		0,0,0,1.0
+	);
 }
 
 void traverseColorModel()
@@ -166,9 +215,10 @@ void traverseColorModel()
 
 	GLfloat minVal[3], maxVal[3];
 
-	// the array of vertices have 3*numvertices members, vertices[0] [1] [2] are x,y,z of the first vertice
+	// the array of vertices have 3*numvertices members, vertices[3] [4] [5] are x,y,z of the first vertice
 	// initialize the min/max value
-	// notice that index of vertice begins from 1, so the valid index range is [1,OBJ->numvertices]
+	// notice that index of vertice begins from 1, so the valid index range is [3,3*OBJ->numvertices+2]
+	/*
 	maxVal[0] = OBJ->vertices[3 + 0];
 	maxVal[1] = OBJ->vertices[3 + 1];
 	maxVal[2] = OBJ->vertices[3 + 2];
@@ -176,9 +226,15 @@ void traverseColorModel()
 	minVal[0] = OBJ->vertices[3 + 0];
 	minVal[1] = OBJ->vertices[3 + 1];
 	minVal[2] = OBJ->vertices[3 + 2];
+	*/
+	
+	maxVal[0] = maxVal[1] = maxVal[2] = -FLT_MAX;
+	minVal[0] = minVal[1] = minVal[2] = FLT_MAX;
+	// be cautious that FLT_MIN is the minimum positive value...
+	
 
 	// get the max/min value
-	for (i = 2; i <= (int)OBJ->numvertices; i++) {
+	for (i = 1; i <= (int)OBJ->numvertices; i++) {
 		maxVal[0] = max(maxVal[0], OBJ->vertices[i * 3 + 0]);
 		maxVal[1] = max(maxVal[1], OBJ->vertices[i * 3 + 1]);
 		maxVal[2] = max(maxVal[2], OBJ->vertices[i * 3 + 2]);
@@ -213,8 +269,8 @@ void traverseColorModel()
 
 	Matrix4 NormalizationTranslation = Matrix4(
 											1,0,0,-OBJ->position[0],
-											0,1,0,-OBJ->position[1],
-											0,0,1,-OBJ->position[2],
+											0,1,0, -OBJ->position[1],
+											0,0,1, -OBJ->position[2],
 											0,0,0,1);
 	// translation to the center
 
@@ -236,10 +292,6 @@ void traverseColorModel()
 		int indv2 = OBJ->triangles[i].vindices[1];
 		int indv3 = OBJ->triangles[i].vindices[2];
 
-		// the index of each color
-		int indc1 = indv1;
-		int indc2 = indv2;
-		int indc3 = indv3;
 
 		// vertices
 		GLfloat vx, vy, vz;
@@ -359,13 +411,23 @@ void onDisplay(void)
 	Matrix4 M = T*S*R*N;
 	Matrix4 V = getViewTransMatrix();
 	//std::cout << "V="<< V << std::endl;
+	
+	Matrix4 P;
+	if (orthogonalProjection) {
+		P = getOrthoMatrix();
+	}
+	else {
+		P = getPerpectiveMatrix();
+	}
+	//std::cout << "P="<< P << std::endl;
 
-	Matrix4 P = Matrix4(
-						1, 0, 0, 0, 
-						0, 1, 0, 0,
-						0, 0, -1, 0,
-						0, 0, 0, 1);
-
+	/*
+	Matrix4 P0 = Matrix4(
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, -1, 0,
+		0, 0, 0, 1);
+	*/
 
 	Matrix4 MVP = P*V*M;
 
@@ -385,12 +447,8 @@ void onDisplay(void)
 	// bind uniform matrix to shader
 	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, mvp);
 
-
 	// draw the array we just bound
-	//glDrawArrays(GL_TRIANGLES, 0, 3);
 	glDrawArrays(GL_TRIANGLES , 0, 3 * (OBJ->numtriangles));
-
-	
 	glutSwapBuffers();
 }
 
@@ -471,17 +529,11 @@ void onMouse(int who, int state, int x, int y)
 	{
 		case GLUT_LEFT_BUTTON:   
 			printf("left button   "); 
-			// this will be called both mouse up and down
-			mouseX = x;
-			mouseY = y;
-			// record initial coordinate of the moving mouse
-			T0 = T;
-			S0 = S;
-			R0 = R;
-			eyePos0 = eyePos;
 			break;
 		case GLUT_MIDDLE_BUTTON: printf("middle button "); break;
-		case GLUT_RIGHT_BUTTON:  printf("right button  "); break; 
+		case GLUT_RIGHT_BUTTON:  
+			printf("right button  "); 
+			break; 
 		case GLUT_WHEEL_UP:
 			printf("wheel up		");
 			if (modeTransformMode == 1) {
@@ -516,6 +568,12 @@ void onMouse(int who, int state, int x, int y)
 				eyePos = Vector3(0, 0, stepSize) + eyePos0;
 				eyePos0 = eyePos;
 			}
+			else if (modeTransformMode == 5) {
+				float stepSize = 1.0 / 80.0;
+				centerPos = Vector3(0, 0, stepSize) + centerPos0;
+				centerPos0 = centerPos;
+			}
+
 			break;
 		case GLUT_WHEEL_DOWN:    
 			if (modeTransformMode == 1) {
@@ -553,6 +611,12 @@ void onMouse(int who, int state, int x, int y)
 				eyePos = Vector3(0, 0, stepSize) + eyePos0;
 				eyePos0 = eyePos;
 			}
+			else if (modeTransformMode == 5) {
+				float stepSize = -1.0 / 80.0;
+				centerPos = Vector3(0, 0, stepSize) + centerPos0;
+				centerPos0 = centerPos;
+			}
+
 			break;
 		default: printf("0x%02X          ", who); break;
 	}
@@ -561,9 +625,30 @@ void onMouse(int who, int state, int x, int y)
 	{
 		case GLUT_DOWN: 
 			printf("start "); 
+			mouseX = x;
+			mouseY = y;
+			if (who == GLUT_LEFT_BUTTON) {
+				leftMouseButton = true;
+			}
+			if (who == GLUT_RIGHT_BUTTON) {
+				leftMouseButton = false;
+			}
 			break;
 		case GLUT_UP:   
 			printf("end   ");
+			// record initial coordinate of the moving mouse
+			T0 = T;
+			S0 = S;
+			R0 = R;
+			eyePos0 = eyePos;
+			centerPos0 = centerPos;
+			xmax0 = xmax;
+			xmin0 = xmin;
+			ymax0 = ymax;
+			ymin0 = ymin;
+			zfar0 = zfar;
+			znear0 = znear;
+
 			break;
 	}
 
@@ -589,6 +674,8 @@ void onMouseMotion(int x, int y)
 				0, 0, 0, 1)*T0;
 			// if do not multiple T0, the translate will always start from the origin
 			// which will discard the previous translate
+			// we use T = matrix * T0 instead of T = matrix * T, for that the later one will accumulate the 
+			// offset in ONE motion, the previous one only update T0 when mouse is up
 			break;
 		}
 		case 2:{
@@ -622,10 +709,41 @@ void onMouseMotion(int x, int y)
 		}
 		case 4: {
 			// eye translate mode
-			float offsetX = (float)(x - mouseX)  / (windowWidth*2);
-			float offsetY = (float)(y - mouseY)  / (windowHeight*2);
+			float offsetX = (float)(x - mouseX)  / (windowWidth);
+			float offsetY = (float)(y - mouseY) / (windowHeight);
 			eyePos = Vector3(offsetX, offsetY, 0) + eyePos0;
 			break;
+		}
+		case 5: {
+			// center translate mode
+			float offsetX = (float)(x - mouseX) / (windowWidth);
+			float offsetY = (float)(y - mouseY) / (windowHeight);
+			centerPos = Vector3(offsetX, offsetY, 0) + centerPos0;
+			break;
+		}
+		case 6: {
+			// projection mode
+			if (leftMouseButton) {
+				// left button 
+				// horizontal for left-right boundary scaling
+				// vertical for bottom-top boundary scaling
+				float offsetX = (float)(x - mouseX) * 2 / windowWidth;
+				float offsetY = (float)(y - mouseY) * 2 / windowHeight;
+				xmin = xmin0 - offsetX;
+				xmax = xmax0 + offsetX;
+				ymin = ymin0 - offsetY;
+				ymax = ymax0 + offsetY;
+			}
+			else {
+				// right button 
+				// horizontal for znear boundary scaling
+				// vertical for zfar boundary scaling
+				float offsetX = (float)(x - mouseX) * 2 / windowWidth;
+				float offsetY = (float)(y - mouseY) * 2 / windowHeight;
+				znear = znear0 + offsetX;
+				zfar = zfar0 + offsetY;
+
+			}
 		}
 
 	}
@@ -704,10 +822,32 @@ void onKeyboard(unsigned char key, int x, int y)
 	case GLUT_KEY_e:
 		// go to eye translate mode
 		modeTransformMode = 4;
-		printf("Key r pressed: go to EYE translate mode\n");
+		printf("Key e pressed: go to EYE translate mode\n");
+		break;
+	case GLUT_KEY_l:
+		// go to center translate mode
+		modeTransformMode = 5;
+		printf("Key l pressed: go to center translate mode\n");
+		break;
+	case GLUT_KEY_p:
+		// go to center translate mode
+		modeTransformMode = 6;
+		printf("Key p pressed: go to projection mode\n");
+		break;
+
+	case GLUT_KEY_o:
+		// switch projection mode
+		orthogonalProjection = !orthogonalProjection;
+		if (orthogonalProjection) {
+			printf("Key o pressed: switch to orthogonal projection mode\n");
+		}
+		else {
+			printf("Key o pressed: switch to perspective projection mode\n");
+		}
 		break;
 
 	}
+
 	//printf("\n");
 }
 
