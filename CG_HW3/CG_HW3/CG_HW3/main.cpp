@@ -20,6 +20,14 @@
 # define GLUT_KEY_ESC 0x001B
 #endif
 
+#ifndef GLUT_KEY_z
+# define GLUT_KEY_z 0x007A
+#endif
+
+#ifndef GLUT_KEY_x
+# define GLUT_KEY_x 0x0078
+#endif
+
 #ifndef max
 # define max(a,b) (((a)>(b))?(a):(b))
 # define min(a,b) (((a)<(b))?(a):(b))
@@ -33,12 +41,28 @@ GLint iLocMVP;
 GLint iLocMDiffuse, iLocMAmbient, iLocMSpecular, iLocMShininess;
 GLint iLocLDAmbient,iLocLDPosition;
 
-char filename[] = "NormalModels/Low/boxN.obj";
+#define numOfModels 5
+char filename[numOfModels][100] = { "NormalModels/High/dragon10KN.obj",
+"NormalModels/High/elephant16KN.obj",
+"NormalModels/High/lucy25KN.obj",
+"NormalModels/High/happy10KN.obj",
+"NormalModels/High/brain18KN.obj",}; 
+
+int modelIndex = 0;
+
 GLMmodel* OBJ;
 GLfloat* vertices;
 GLfloat* normals;
 
 Matrix4 N;
+
+float xmin = -1.0, xmax = 1.0, ymin = -1.0, ymax = 1.0, znear = 1.0, zfar = 3.0; // zfar\znear should be positive
+Vector3 eyePos = Vector3(0, 0, 2);
+
+Vector3 centerPos = Vector3(0, 0, 0);
+
+Vector3 upVec = Vector3(0, 1, 0);// in fact, this vector should be called as P1P3
+
 
 struct LightSourceParameters {
 	float ambient[4];
@@ -55,6 +79,48 @@ struct LightSourceParameters {
 	float quadraticAttenuation;
 }typedef LightSource;
 LightSource lightsource[3];
+
+
+Matrix4 getPerpectiveMatrix() {
+	// Zfar > Znear > 0
+	// in OpenGL api
+	// Xmax = Right, Xmin = Left
+	// Ymax = Top, Ymin = Bottom
+	// Znear = -Near, Zfar = -far
+	return Matrix4(
+		2.0*znear / (xmax - xmin), 0, (xmax + xmin) / (xmin - xmax), 0,
+		0, 2.0*znear / (ymax - ymin), (ymax + ymin) / (ymin - ymax), 0,
+		0, 0, (zfar + znear) / (znear - zfar), (2.0*zfar*znear) / (znear - zfar),
+		0, 0, -1, 0
+	);
+}
+
+Matrix4 getViewTransMatrix() {
+	/*
+	use global parameter eyePos, centerPos, upVec to compute Viewing Transformation Matrix
+	*/
+	Vector3 P1P2 = centerPos - eyePos;
+	Vector3 P1P3 = upVec;
+	Vector3 Rz = P1P2.normalize();
+	Vector3 Rx = P1P2.cross(P1P3).normalize();
+	Vector3 Ry = Rx.cross(Rz).normalize();
+
+	Matrix4 Rv = Matrix4(
+		Rx[0], Rx[1], Rx[2], 0, // new X axis
+		Ry[0], Ry[1], Ry[2], 0, // new up vector
+		-Rz[0], -Rz[1], -Rz[2], 0,// new direction/forward vector
+		0, 0, 0, 1);
+	Matrix4 Rt = Matrix4(
+		1, 0, 0, -eyePos[0],
+		0, 1, 0, -eyePos[1],
+		0, 0, 1, -eyePos[2],
+		0, 0, 0, 1);
+	//std::cout <<"Rv"<< Rv << std::endl;
+	//std::cout <<"Rt"<< Rt << std::endl;
+	//upVec = Ry;
+	return Rv*Rt;
+}
+
 
 void traverseColorModel()
 {
@@ -162,8 +228,8 @@ void loadOBJModel()
 	if(OBJ != NULL){
 		free(OBJ);
 	}
-	OBJ = glmReadOBJ(filename);
-	printf("%s\n", filename);
+	OBJ = glmReadOBJ(filename[modelIndex]);
+	printf("%s\n", filename[modelIndex]);
 
 	glmFacetNormals(OBJ);
 	glmVertexNormals(OBJ, 90.0);
@@ -187,17 +253,6 @@ void onDisplay(void)
 	glEnableVertexAttribArray(iLocNormal);
 
 	// organize the arrays
-	static GLfloat triangle_normals[] = {
-		0.0f, 0.0f, 1.0f,
-		0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, -1.0f
-	};
-
-	static GLfloat triangle_vertex[] = {
-		 1.0f, -1.0f, 0.0f,
-		 0.0f,  1.0f, 0.0f,
-		-1.0f, -1.0f, 0.0f
-	};
 
 	static GLfloat ambient[]={0.500000, 0.500000, 0.500000};
 	static GLfloat diffuse[]={0.784314, 0.470588, 0.752941};
@@ -218,18 +273,10 @@ void onDisplay(void)
 						0, 1, 0, 0,
 						0, 0, 1, 0,
 						0, 0, 0, 1);
-	Matrix4 V = Matrix4(
-						1, 0, 0, 0, 
-						0, 1, 0, 0,
-						0, 0, 1, 0,
-						0, 0, 0, 1);
-	Matrix4 P = Matrix4(
-						1, 0, 0, 0, 
-						0, 1, 0, 0,
-						0, 0, -1, 0,
-						0, 0, 0, 1);
+	Matrix4 V = getViewTransMatrix();
+	Matrix4 P = getPerpectiveMatrix();
 
-	Matrix4 MVP = P*V*M;
+	Matrix4 MVP = P*V*N;
 
 	GLfloat mvp[16];
 	// row-major ---> column-major
@@ -246,14 +293,14 @@ void onDisplay(void)
 	glUniform1f(iLocMShininess, shininess);
 
 	// bind array pointers to shader
-	glVertexAttribPointer(iLocPosition, 3, GL_FLOAT, GL_FALSE, 0, triangle_vertex);
-	glVertexAttribPointer(iLocNormal, 3, GL_FLOAT, GL_FALSE, 0, triangle_normals);
+	glVertexAttribPointer(iLocPosition, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+	glVertexAttribPointer(iLocNormal, 3, GL_FLOAT, GL_FALSE, 0, normals);
 	
 	// bind uniform matrix to shader
 	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, mvp);
 
 	// draw the array we just bound
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDrawArrays(GL_TRIANGLES, 0, 3 * (OBJ->numtriangles));
 
 	glutSwapBuffers();
 }
@@ -385,8 +432,26 @@ void onKeyboard(unsigned char key, int x, int y)
 		case GLUT_KEY_ESC: /* the Esc key */ 
 			exit(0); 
 			break;
+		case GLUT_KEY_z:
+			// switch to the previous model
+			modelIndex--;
+			if (modelIndex < 0) {
+				modelIndex += numOfModels;
+			}
+			loadOBJModel();
+			printf("switch to previous model\n");
+			break;
+		case GLUT_KEY_x:
+			// switch to the next model
+			printf("switch to next model\n");
+			modelIndex++;
+			if (modelIndex >= numOfModels) {
+				modelIndex -= numOfModels;
+			}
+			loadOBJModel();
+			break;
+
 	}
-	printf("\n");
 }
 
 void onKeyboardSpecial(int key, int x, int y){
@@ -423,7 +488,7 @@ int main(int argc, char **argv)
 	// create window
 	glutInitWindowPosition(500, 100);
 	glutInitWindowSize(800, 800);
-	glutCreateWindow("10420 CS550000 CG HW2 TA");
+	glutCreateWindow("10420 CS550000 CG HW2 X1052165 Yuchun Jin");
 
 	glewInit();
 	if(glewIsSupported("GL_VERSION_2_0")){
