@@ -28,6 +28,38 @@
 # define GLUT_KEY_x 0x0078
 #endif
 
+#ifndef GLUT_KEY_h
+# define GLUT_KEY_h 0x0068
+#endif
+
+#ifndef GLUT_KEY_q
+# define GLUT_KEY_q 0x0071
+#endif
+
+#ifndef GLUT_KEY_w
+# define GLUT_KEY_w 0x0077
+#endif
+
+#ifndef GLUT_KEY_e
+# define GLUT_KEY_e 0x0065
+#endif
+
+#ifndef GLUT_KEY_a
+# define GLUT_KEY_a 0x0061
+#endif
+
+#ifndef GLUT_KEY_s
+# define GLUT_KEY_s 0x0073
+#endif
+
+#ifndef GLUT_KEY_d
+# define GLUT_KEY_d 0x0064
+#endif
+
+
+
+
+
 #ifndef max
 # define max(a,b) (((a)>(b))?(a):(b))
 # define min(a,b) (((a)<(b))?(a):(b))
@@ -39,14 +71,14 @@ GLint iLocNormal;
 GLint iLocMVP;
 
 GLint iLocMDiffuse, iLocMAmbient, iLocMSpecular, iLocMShininess;
-GLint iLocLDAmbient,iLocLDPosition;
+GLint iLocLDAmbient, iLocLDPosition;
 
 #define numOfModels 5
 char filename[numOfModels][100] = { "NormalModels/High/dragon10KN.obj",
 "NormalModels/High/elephant16KN.obj",
 "NormalModels/High/lucy25KN.obj",
 "NormalModels/High/happy10KN.obj",
-"NormalModels/High/brain18KN.obj",}; 
+"NormalModels/High/brain18KN.obj", };
 
 int modelIndex = 0;
 
@@ -56,13 +88,13 @@ GLfloat* normals;
 
 Matrix4 N;
 
-float xmin = -1.0, xmax = 1.0, ymin = -1.0, ymax = 1.0, znear = 1.0, zfar = 3.0; // zfar\znear should be positive
+float xmin = -1.0, xmax = 1.0, ymin = -1.0, ymax = 1.0, znear = 1.0, zfar = 3.0; // zfar/znear should be positive
 Vector3 eyePos = Vector3(0, 0, 2);
-
 Vector3 centerPos = Vector3(0, 0, 0);
-
 Vector3 upVec = Vector3(0, 1, 0);// in fact, this vector should be called as P1P3
 
+int ambientOn = 1, diffuseOn = 1, specularOn = 1;
+int directionalOn = 0, pointOn = 0, spotOn = 0;
 
 struct LightSourceParameters {
 	float ambient[4];
@@ -125,19 +157,14 @@ Matrix4 getViewTransMatrix() {
 void traverseColorModel()
 {
 	int i;
-	
+
 	GLfloat maxVal[3];
 	GLfloat minVal[3];
 
-	// TODO:
-	//// You should traverse the vertices and the colors of each triangle, and 
-	//// then normalize the model to unit size by using transformation matrices. 
-	//// i.e. Each vertex should be bounded in [-1, 1], which will fit the camera clipping window.
-
 
 	// number of triangles
-	vertices = (GLfloat*)malloc(sizeof(GLfloat)*OBJ->numtriangles*9);
-	normals = (GLfloat*)malloc(sizeof(GLfloat)*OBJ->numtriangles*9);
+	vertices = (GLfloat*)malloc(sizeof(GLfloat)*OBJ->numtriangles * 9);
+	normals = (GLfloat*)malloc(sizeof(GLfloat)*OBJ->numtriangles * 9);
 
 	float max_x = OBJ->vertices[3];
 	float max_y = OBJ->vertices[4];
@@ -146,7 +173,7 @@ void traverseColorModel()
 	float min_y = OBJ->vertices[4];
 	float min_z = OBJ->vertices[5];
 
-	for(i=0; i<(int)OBJ->numtriangles; i++)
+	for (i = 0; i < (int)OBJ->numtriangles; i++)
 	{
 		// the index of each vertex
 		int indv1 = OBJ->triangles[i].vindices[0];
@@ -159,64 +186,64 @@ void traverseColorModel()
 		int indc3 = indv3;
 
 		// vertices
-		
-		vertices[i*9 + 0] = OBJ->vertices[indv1*3+0];
-		vertices[i*9 + 1] = OBJ->vertices[indv1*3+1];
-		vertices[i*9 + 2] = OBJ->vertices[indv1*3+2];
-		if(vertices[i*9 + 0] > max_x) max_x = vertices[i*9 + 0];
-		if(vertices[i*9 + 1] > max_y) max_y = vertices[i*9 + 1]; 
-		if(vertices[i*9 + 2] > max_z) max_z = vertices[i*9 + 2];
-		if(vertices[i*9 + 0] < min_x) min_x = vertices[i*9 + 0];
-		if(vertices[i*9 + 1] < min_y) min_y = vertices[i*9 + 1];
-		if(vertices[i*9 + 2] < min_z) min_z = vertices[i*9 + 2];
 
-		vertices[i*9 + 3] = OBJ->vertices[indv2*3+0];
-		vertices[i*9 + 4] = OBJ->vertices[indv2*3+1];
-		vertices[i*9 + 5] = OBJ->vertices[indv2*3+2];
-		if(vertices[i*9 + 3] > max_x) max_x = vertices[i*9 + 3];
-		if(vertices[i*9 + 4] > max_y) max_y = vertices[i*9 + 4];
-		if(vertices[i*9 + 5] > max_z) max_z = vertices[i*9 + 5];
-		if(vertices[i*9 + 3] < min_x) min_x = vertices[i*9 + 3];
-		if(vertices[i*9 + 4] < min_y) min_y = vertices[i*9 + 4];
-		if(vertices[i*9 + 5] < min_z) min_z = vertices[i*9 + 5];
-	
-		vertices[i*9 + 6] = OBJ->vertices[indv3*3+0];
-		vertices[i*9 + 7] = OBJ->vertices[indv3*3+1];
-		vertices[i*9 + 8] = OBJ->vertices[indv3*3+2];
-		if(vertices[i*9 + 6] > max_x) max_x = vertices[i*9 + 6];
-		if(vertices[i*9 + 7] > max_y) max_y = vertices[i*9 + 7];
-		if(vertices[i*9 + 8] > max_z) max_z = vertices[i*9 + 8];
-		if(vertices[i*9 + 6] < min_x) min_x = vertices[i*9 + 6];
-		if(vertices[i*9 + 7] < min_y) min_y = vertices[i*9 + 7];
-		if(vertices[i*9 + 8] < min_z) min_z = vertices[i*9 + 8];
+		vertices[i * 9 + 0] = OBJ->vertices[indv1 * 3 + 0];
+		vertices[i * 9 + 1] = OBJ->vertices[indv1 * 3 + 1];
+		vertices[i * 9 + 2] = OBJ->vertices[indv1 * 3 + 2];
+		if (vertices[i * 9 + 0] > max_x) max_x = vertices[i * 9 + 0];
+		if (vertices[i * 9 + 1] > max_y) max_y = vertices[i * 9 + 1];
+		if (vertices[i * 9 + 2] > max_z) max_z = vertices[i * 9 + 2];
+		if (vertices[i * 9 + 0] < min_x) min_x = vertices[i * 9 + 0];
+		if (vertices[i * 9 + 1] < min_y) min_y = vertices[i * 9 + 1];
+		if (vertices[i * 9 + 2] < min_z) min_z = vertices[i * 9 + 2];
+
+		vertices[i * 9 + 3] = OBJ->vertices[indv2 * 3 + 0];
+		vertices[i * 9 + 4] = OBJ->vertices[indv2 * 3 + 1];
+		vertices[i * 9 + 5] = OBJ->vertices[indv2 * 3 + 2];
+		if (vertices[i * 9 + 3] > max_x) max_x = vertices[i * 9 + 3];
+		if (vertices[i * 9 + 4] > max_y) max_y = vertices[i * 9 + 4];
+		if (vertices[i * 9 + 5] > max_z) max_z = vertices[i * 9 + 5];
+		if (vertices[i * 9 + 3] < min_x) min_x = vertices[i * 9 + 3];
+		if (vertices[i * 9 + 4] < min_y) min_y = vertices[i * 9 + 4];
+		if (vertices[i * 9 + 5] < min_z) min_z = vertices[i * 9 + 5];
+
+		vertices[i * 9 + 6] = OBJ->vertices[indv3 * 3 + 0];
+		vertices[i * 9 + 7] = OBJ->vertices[indv3 * 3 + 1];
+		vertices[i * 9 + 8] = OBJ->vertices[indv3 * 3 + 2];
+		if (vertices[i * 9 + 6] > max_x) max_x = vertices[i * 9 + 6];
+		if (vertices[i * 9 + 7] > max_y) max_y = vertices[i * 9 + 7];
+		if (vertices[i * 9 + 8] > max_z) max_z = vertices[i * 9 + 8];
+		if (vertices[i * 9 + 6] < min_x) min_x = vertices[i * 9 + 6];
+		if (vertices[i * 9 + 7] < min_y) min_y = vertices[i * 9 + 7];
+		if (vertices[i * 9 + 8] < min_z) min_z = vertices[i * 9 + 8];
 
 		// colors
 
-		normals[i*9 + 0] = OBJ->normals[indv1*3+0];
-		normals[i*9 + 1] = OBJ->normals[indv1*3+1];
-		normals[i*9 + 2] = OBJ->normals[indv1*3+2];
+		normals[i * 9 + 0] = OBJ->normals[indv1 * 3 + 0];
+		normals[i * 9 + 1] = OBJ->normals[indv1 * 3 + 1];
+		normals[i * 9 + 2] = OBJ->normals[indv1 * 3 + 2];
 
-		normals[i*9 + 3] = OBJ->normals[indv2*3+0];
-		normals[i*9 + 4] = OBJ->normals[indv2*3+1];
-		normals[i*9 + 5] = OBJ->normals[indv2*3+2];
+		normals[i * 9 + 3] = OBJ->normals[indv2 * 3 + 0];
+		normals[i * 9 + 4] = OBJ->normals[indv2 * 3 + 1];
+		normals[i * 9 + 5] = OBJ->normals[indv2 * 3 + 2];
 
-		normals[i*9 + 6] = OBJ->normals[indv3*3+0];
-		normals[i*9 + 7] = OBJ->normals[indv3*3+1];
-		normals[i*9 + 8] = OBJ->normals[indv3*3+2];
+		normals[i * 9 + 6] = OBJ->normals[indv3 * 3 + 0];
+		normals[i * 9 + 7] = OBJ->normals[indv3 * 3 + 1];
+		normals[i * 9 + 8] = OBJ->normals[indv3 * 3 + 2];
 
 
 	}
-	float normalize_scale = max(max(abs(max_x-min_x),abs(max_y-min_y)),abs(max_z-min_z));
+	float normalize_scale = max(max(abs(max_x - min_x), abs(max_y - min_y)), abs(max_z - min_z));
 
-	Matrix4 S,T;
+	Matrix4 S, T;
 	S.identity();
 	T.identity();
-	S[0] = 2/normalize_scale;
-	S[5] = 2/normalize_scale;;
-	S[10] = 2/normalize_scale;
-	T[3] = -(min_x+max_x)/2;
-	T[7] = -(min_y+max_y)/2;
-	T[11] = -(min_z+max_z)/2;
+	S[0] = 2 / normalize_scale;
+	S[5] = 2 / normalize_scale;;
+	S[10] = 2 / normalize_scale;
+	T[3] = -(min_x + max_x) / 2;
+	T[7] = -(min_y + max_y) / 2;
+	T[11] = -(min_z + max_z) / 2;
 
 	N = S*T;
 
@@ -225,7 +252,7 @@ void traverseColorModel()
 void loadOBJModel()
 {
 	// read an obj model here
-	if(OBJ != NULL){
+	if (OBJ != NULL) {
 		free(OBJ);
 	}
 	OBJ = glmReadOBJ(filename[modelIndex]);
@@ -249,19 +276,13 @@ void onDisplay(void)
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glEnableVertexAttribArray(iLocPosition);
-	glEnableVertexAttribArray(iLocNormal);
+	glEnableVertexAttribArray(iLocPosition); // av4position
+	glEnableVertexAttribArray(iLocNormal); // av3normal
 
-	// organize the arrays
-
-	static GLfloat ambient[]={0.500000, 0.500000, 0.500000};
-	static GLfloat diffuse[]={0.784314, 0.470588, 0.752941};
-	static GLfloat specular[]={1.000000,1.000000, 1.000000};
+	static GLfloat ambient[] = { 0.500000, 0.500000, 0.500000 };
+	static GLfloat diffuse[] = { 0.784314, 0.470588, 0.752941 };
+	static GLfloat specular[] = { 1.000000,1.000000, 1.000000 };
 	static GLfloat shininess = 1.000000;
-
-	// TODO:
-	//// Please define the model transformation matrix, viewing transformation matrix, 
-	//// projection transformation matrix
 
 	//MVP
 	Matrix4 T;
@@ -269,10 +290,10 @@ void onDisplay(void)
 	Matrix4 R;
 
 	Matrix4 M = Matrix4(
-						1, 0, 0, 0, 
-						0, 1, 0, 0,
-						0, 0, 1, 0,
-						0, 0, 0, 1);
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1);
 	Matrix4 V = getViewTransMatrix();
 	Matrix4 P = getPerpectiveMatrix();
 
@@ -280,24 +301,23 @@ void onDisplay(void)
 
 	GLfloat mvp[16];
 	// row-major ---> column-major
-	mvp[0] = MVP[0];  mvp[4] = MVP[1];   mvp[8]  = MVP[2];    mvp[12] = MVP[3];  
-	mvp[1] = MVP[4];  mvp[5] = MVP[5];   mvp[9]  = MVP[6];    mvp[13] = MVP[7];  
-	mvp[2] = MVP[8];  mvp[6] = MVP[9];   mvp[10] = MVP[10];   mvp[14] = MVP[11];  
+	mvp[0] = MVP[0];  mvp[4] = MVP[1];   mvp[8] = MVP[2];    mvp[12] = MVP[3];
+	mvp[1] = MVP[4];  mvp[5] = MVP[5];   mvp[9] = MVP[6];    mvp[13] = MVP[7];
+	mvp[2] = MVP[8];  mvp[6] = MVP[9];   mvp[10] = MVP[10];   mvp[14] = MVP[11];
 	mvp[3] = MVP[12]; mvp[7] = MVP[13];  mvp[11] = MVP[14];   mvp[15] = MVP[15];
 
-
 	//pass model material value to the shader
-	glUniform4fv(iLocMAmbient, 1, ambient);
-	glUniform4fv(iLocMDiffuse, 1, diffuse);
-	glUniform4fv(iLocMSpecular, 1, specular);
-	glUniform1f(iLocMShininess, shininess);
+	glUniform4fv(iLocMAmbient, 1, ambient); // Material.ambient
+	glUniform4fv(iLocMDiffuse, 1, diffuse); // Material.diffuse
+	glUniform4fv(iLocMSpecular, 1, specular); // Material.specular
+	glUniform1f(iLocMShininess, shininess); // Material.shininess
 
 	// bind array pointers to shader
 	glVertexAttribPointer(iLocPosition, 3, GL_FLOAT, GL_FALSE, 0, vertices);
 	glVertexAttribPointer(iLocNormal, 3, GL_FLOAT, GL_FALSE, 0, normals);
-	
+
 	// bind uniform matrix to shader
-	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, mvp);
+	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, mvp); // mvp
 
 	// draw the array we just bound
 	glDrawArrays(GL_TRIANGLES, 0, 3 * (OBJ->numtriangles));
@@ -308,13 +328,13 @@ void onDisplay(void)
 void showShaderCompileStatus(GLuint shader, GLint *shaderCompiled)
 {
 	glGetShaderiv(shader, GL_COMPILE_STATUS, shaderCompiled);
-	if(GL_FALSE == (*shaderCompiled))
+	if (GL_FALSE == (*shaderCompiled))
 	{
 		GLint maxLength = 0;
 		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
 
 		// The maxLength includes the NULL character.
-		GLchar *errorLog = (GLchar*) malloc(sizeof(GLchar) * maxLength);
+		GLchar *errorLog = (GLchar*)malloc(sizeof(GLchar) * maxLength);
 		glGetShaderInfoLog(shader, maxLength, &maxLength, &errorLog[0]);
 		fprintf(stderr, "%s", errorLog);
 
@@ -322,7 +342,7 @@ void showShaderCompileStatus(GLuint shader, GLint *shaderCompiled)
 		free(errorLog);
 	}
 }
-void setLightingSource(){
+void setLightingSource() {
 
 	lightsource[0].position[0] = 0;
 	lightsource[0].position[1] = 0;
@@ -358,13 +378,13 @@ void setShaders()
 	glCompileShader(v);
 	GLint vShaderCompiled;
 	showShaderCompileStatus(v, &vShaderCompiled);
-	if(!vShaderCompiled) system("pause"), exit(123);
+	if (!vShaderCompiled) system("pause"), exit(123);
 
 	// compile fragment shader
 	glCompileShader(f);
 	GLint fShaderCompiled;
 	showShaderCompileStatus(f, &fShaderCompiled);
-	if(!fShaderCompiled) system("pause"), exit(456);
+	if (!fShaderCompiled) system("pause"), exit(456);
 
 	p = glCreateProgram();
 
@@ -375,9 +395,9 @@ void setShaders()
 	// link program
 	glLinkProgram(p);
 
-	iLocPosition = glGetAttribLocation (p, "av4position");
+	iLocPosition = glGetAttribLocation(p, "av4position");
 	iLocNormal = glGetAttribLocation(p, "av3normal");
-	iLocMVP		 = glGetUniformLocation(p, "mvp");
+	iLocMVP = glGetUniformLocation(p, "mvp");
 
 	iLocMDiffuse = glGetUniformLocation(p, "Material.diffuse");
 	iLocMAmbient = glGetUniformLocation(p, "Material.ambient");
@@ -386,34 +406,43 @@ void setShaders()
 
 	iLocLDAmbient = glGetUniformLocation(p, "LightSource[0].ambient");
 	iLocLDPosition = glGetUniformLocation(p, "LightSource[0].position");
-	
+
 
 	glUseProgram(p);
 
-	glUniform4fv(iLocLDAmbient, 1, lightsource[0].ambient);
-	glUniform4fv(iLocLDPosition, 1, lightsource[0].position);
+	glUniform4fv(iLocLDAmbient, 1, lightsource[0].ambient); // LightSource[0].ambient
+	glUniform4fv(iLocLDPosition, 1, lightsource[0].position); // LightSource[0].position
 
 }
 
+
+void printStatus() {
+	// print current status of lighting
+	printf("Directional light = %s, Point light = %s, Spot light = %s\n",
+		directionalOn ? "ON" : "OFF", pointOn ? "ON" : "OFF", spotOn ? "ON" : "OFF");
+	printf("Ambient = %s, Diffuse = %s, Specular = %s\n",
+		ambientOn ? "ON" : "OFF", diffuseOn ? "ON" : "OFF", specularOn ? "ON" : "OFF");
+	printf("\n");
+}
 
 void onMouse(int who, int state, int x, int y)
 {
 	printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
 
-	switch(who)
+	switch (who)
 	{
-		case GLUT_LEFT_BUTTON:   printf("left button   "); break;
-		case GLUT_MIDDLE_BUTTON: printf("middle button "); break;
-		case GLUT_RIGHT_BUTTON:  printf("right button  "); break; 
-		case GLUT_WHEEL_UP:      printf("wheel up      "); break;
-		case GLUT_WHEEL_DOWN:    printf("wheel down    "); break;
-		default:                 printf("0x%02X          ", who); break;
+	case GLUT_LEFT_BUTTON:   printf("left button   "); break;
+	case GLUT_MIDDLE_BUTTON: printf("middle button "); break;
+	case GLUT_RIGHT_BUTTON:  printf("right button  "); break;
+	case GLUT_WHEEL_UP:      printf("wheel up      "); break;
+	case GLUT_WHEEL_DOWN:    printf("wheel down    "); break;
+	default:                 printf("0x%02X          ", who); break;
 	}
 
-	switch(state)
+	switch (state)
 	{
-		case GLUT_DOWN: printf("start "); break;
-		case GLUT_UP:   printf("end   "); break;
+	case GLUT_DOWN: printf("start "); break;
+	case GLUT_UP:   printf("end   "); break;
 	}
 
 	printf("\n");
@@ -424,51 +453,91 @@ void onMouseMotion(int x, int y)
 	printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
 }
 
-void onKeyboard(unsigned char key, int x, int y) 
+void onKeyboard(unsigned char key, int x, int y)
 {
-	printf("%18s(): (%d, %d) key: %c(0x%02X) ", __FUNCTION__, x, y, key, key);
-	switch(key) 
+	//printf("%18s(): (%d, %d) key: %c(0x%02X) ", __FUNCTION__, x, y, key, key);
+	switch (key)
 	{
-		case GLUT_KEY_ESC: /* the Esc key */ 
-			exit(0); 
-			break;
-		case GLUT_KEY_z:
-			// switch to the previous model
-			modelIndex--;
-			if (modelIndex < 0) {
-				modelIndex += numOfModels;
-			}
-			loadOBJModel();
-			printf("switch to previous model\n");
-			break;
-		case GLUT_KEY_x:
-			// switch to the next model
-			printf("switch to next model\n");
-			modelIndex++;
-			if (modelIndex >= numOfModels) {
-				modelIndex -= numOfModels;
-			}
-			loadOBJModel();
-			break;
+	case GLUT_KEY_ESC: /* the Esc key */
+		exit(0);
+		break;
+	case GLUT_KEY_z:
+		// switch to the previous model
+		modelIndex--;
+		if (modelIndex < 0) {
+			modelIndex += numOfModels;
+		}
+		loadOBJModel();
+		printf("switch to previous model\n");
+		break;
+	case GLUT_KEY_x:
+		// switch to the next model
+		printf("switch to next model\n");
+		modelIndex++;
+		if (modelIndex >= numOfModels) {
+			modelIndex -= numOfModels;
+		}
+		loadOBJModel();
+		break;
+
+	case GLUT_KEY_h:
+		// show help menu
+		printf("----------Help Menu----------\n");
+		printf("press 'q' 'w' 'e' to toggle the light source\n");
+		printf("press 'a' 's' 'd' to toggle the light arrtibute\n");
+		printf("press 'z' 'x' to change model\n");
+		printf("----------Help Menu----------\n");
+		break;
+	case GLUT_KEY_q:
+		directionalOn = (directionalOn + 1) % 2;
+		printf("Turn %s directional light\n", directionalOn ? "ON" : "OFF");
+		printStatus();
+		break;
+	case GLUT_KEY_w:
+		pointOn = (pointOn + 1) % 2;
+		printf("Turn %s point light\n", pointOn ? "ON" : "OFF");
+		printStatus();
+		break;
+	case GLUT_KEY_e:
+		spotOn = (spotOn + 1) % 2;
+		printf("Turn %s spot light\n", spotOn ? "ON" : "OFF");
+		printStatus();
+		break;
+	case GLUT_KEY_a:
+		ambientOn = (ambientOn + 1) % 2;
+		printf("Turn %s ambient effect\n", ambientOn ? "ON" : "OFF");
+		printStatus();
+		break;
+	case GLUT_KEY_s:
+		diffuseOn = (diffuseOn + 1) % 2;
+		printf("Turn %s diffuse effect\n", diffuseOn ? "ON" : "OFF");
+		printStatus();
+		break;
+	case GLUT_KEY_d:
+		specularOn = (specularOn + 1) % 2;
+		printf("Turn %s specular effect\n", specularOn ? "ON" : "OFF");
+		printStatus();
+		break;
 
 	}
+	//printf("\n");
 }
 
-void onKeyboardSpecial(int key, int x, int y){
+void onKeyboardSpecial(int key, int x, int y) {
 	printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
-	switch(key)
+	switch (key)
 	{
-		case GLUT_KEY_LEFT:
-			printf("key: LEFT ARROW");
-			break;
-			
-		case GLUT_KEY_RIGHT:
-			printf("key: RIGHT ARROW");
-			break;
+	case GLUT_KEY_LEFT:
+		printf("key: LEFT ARROW");
+		break;
 
-		default:
-			printf("key: 0x%02X      ", key);
-			break;
+	case GLUT_KEY_RIGHT:
+		printf("key: RIGHT ARROW");
+		break;
+
+	default:
+		printf("key: 0x%02X      ", key);
+		break;
 	}
 	printf("\n");
 }
@@ -479,7 +548,7 @@ void onWindowReshape(int width, int height)
 	printf("%18s(): %dx%d\n", __FUNCTION__, width, height);
 }
 
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
 	// glut init
 	glutInit(&argc, argv);
@@ -491,9 +560,10 @@ int main(int argc, char **argv)
 	glutCreateWindow("10420 CS550000 CG HW2 X1052165 Yuchun Jin");
 
 	glewInit();
-	if(glewIsSupported("GL_VERSION_2_0")){
+	if (glewIsSupported("GL_VERSION_2_0")) {
 		printf("Ready for OpenGL 2.0\n");
-	}else{
+	}
+	else {
 		printf("OpenGL 2.0 not supported\n");
 		system("pause");
 		exit(1);
@@ -503,20 +573,20 @@ int main(int argc, char **argv)
 	loadOBJModel();
 
 	// register glut callback functions
-	glutDisplayFunc (onDisplay);
-	glutIdleFunc    (onIdle);
+	glutDisplayFunc(onDisplay);
+	glutIdleFunc(onIdle);
 	glutKeyboardFunc(onKeyboard);
-	glutSpecialFunc (onKeyboardSpecial);
-	glutMouseFunc   (onMouse);
-	glutMotionFunc  (onMouseMotion);
-	glutReshapeFunc (onWindowReshape);
+	glutSpecialFunc(onKeyboardSpecial);
+	glutMouseFunc(onMouse);
+	glutMotionFunc(onMouseMotion);
+	glutReshapeFunc(onWindowReshape);
 
 	//set up lighting parameters
 	setLightingSource();
 
 	// set up shaders here
 	setShaders();
-	
+
 	glEnable(GL_DEPTH_TEST);
 
 	// main loop
