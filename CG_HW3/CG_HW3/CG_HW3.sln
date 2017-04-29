@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CG_HW3", "CG_HW3\CG_HW3.vcxproj", "{D3F610BE-79BB-4D51-A1DF-F5C9212C773F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D3F610BE-79BB-4D51-A1DF-F5C9212C773F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D3F610BE-79BB-4D51-A1DF-F5C9212C773F}.Debug|Win32.Build.0 = Debug|Win32
+		{D3F610BE-79BB-4D51-A1DF-F5C9212C773F}.Release|Win32.ActiveCfg = Release|Win32
+		{D3F610BE-79BB-4D51-A1DF-F5C9212C773F}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
