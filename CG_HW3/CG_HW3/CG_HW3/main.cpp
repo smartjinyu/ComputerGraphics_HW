@@ -270,6 +270,53 @@ void onIdle()
 	glutPostRedisplay();
 }
 
+
+void getGroupVerticeAndNormal(GLMgroup* group,GLfloat* &groupVertices,GLfloat* &groupNormals) {
+	groupVertices = (GLfloat*)malloc(sizeof(GLfloat)*group->numtriangles * 9);
+	groupNormals = (GLfloat*)malloc(sizeof(GLfloat)*group->numtriangles * 9);
+
+	for (int i = 0; i < group->numtriangles; i++) {
+		int triangleID = group->triangles[i];
+
+		// the index of each vertex
+		int indv1 = OBJ->triangles[triangleID].vindices[0];
+		int indv2 = OBJ->triangles[triangleID].vindices[1];
+		int indv3 = OBJ->triangles[triangleID].vindices[2];
+
+		// the index of each color
+		int indc1 = indv1;
+		int indc2 = indv2;
+		int indc3 = indv3;
+
+		// vertices
+
+		groupVertices[i * 9 + 0] = OBJ->vertices[indv1 * 3 + 0];
+		groupVertices[i * 9 + 1] = OBJ->vertices[indv1 * 3 + 1];
+		groupVertices[i * 9 + 2] = OBJ->vertices[indv1 * 3 + 2];
+
+		groupVertices[i * 9 + 3] = OBJ->vertices[indv2 * 3 + 0];
+		groupVertices[i * 9 + 4] = OBJ->vertices[indv2 * 3 + 1];
+		groupVertices[i * 9 + 5] = OBJ->vertices[indv2 * 3 + 2];
+
+		groupVertices[i * 9 + 6] = OBJ->vertices[indv3 * 3 + 0];
+		groupVertices[i * 9 + 7] = OBJ->vertices[indv3 * 3 + 1];
+		groupVertices[i * 9 + 8] = OBJ->vertices[indv3 * 3 + 2];
+
+		// colors
+
+		groupNormals[i * 9 + 0] = OBJ->normals[indv1 * 3 + 0];
+		groupNormals[i * 9 + 1] = OBJ->normals[indv1 * 3 + 1];
+		groupNormals[i * 9 + 2] = OBJ->normals[indv1 * 3 + 2];
+
+		groupNormals[i * 9 + 3] = OBJ->normals[indv2 * 3 + 0];
+		groupNormals[i * 9 + 4] = OBJ->normals[indv2 * 3 + 1];
+		groupNormals[i * 9 + 5] = OBJ->normals[indv2 * 3 + 2];
+
+		groupNormals[i * 9 + 6] = OBJ->normals[indv3 * 3 + 0];
+		groupNormals[i * 9 + 7] = OBJ->normals[indv3 * 3 + 1];
+		groupNormals[i * 9 + 8] = OBJ->normals[indv3 * 3 + 2];
+	}
+}
 void onDisplay(void)
 {
 	// clear canvas
@@ -306,21 +353,40 @@ void onDisplay(void)
 	mvp[2] = MVP[8];  mvp[6] = MVP[9];   mvp[10] = MVP[10];   mvp[14] = MVP[11];
 	mvp[3] = MVP[12]; mvp[7] = MVP[13];  mvp[11] = MVP[14];   mvp[15] = MVP[15];
 
-	//pass model material value to the shader
-	glUniform4fv(iLocMAmbient, 1, ambient); // Material.ambient
-	glUniform4fv(iLocMDiffuse, 1, diffuse); // Material.diffuse
-	glUniform4fv(iLocMSpecular, 1, specular); // Material.specular
-	glUniform1f(iLocMShininess, shininess); // Material.shininess
-
-	// bind array pointers to shader
-	glVertexAttribPointer(iLocPosition, 3, GL_FLOAT, GL_FALSE, 0, vertices);
-	glVertexAttribPointer(iLocNormal, 3, GL_FLOAT, GL_FALSE, 0, normals);
-
 	// bind uniform matrix to shader
 	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, mvp); // mvp
 
+	//pass model material value to the shader
+	glUniform4fv(iLocMAmbient, 1, ambient);
+	glUniform4fv(iLocMDiffuse, 1, diffuse);
+	glUniform4fv(iLocMSpecular, 1, specular);
+	glUniform1f(iLocMShininess, shininess);
+
+
+	GLfloat* groupVertices;
+	GLfloat* groupNormals;
+	GLMgroup* group = OBJ->groups;
+	while (group) {
+		getGroupVerticeAndNormal(group, groupVertices, groupNormals);
+		glUniform4fv(iLocMAmbient, 1, OBJ->materials[group->material].ambient); // Material.ambient
+		glUniform4fv(iLocMDiffuse, 1, OBJ->materials[group->material].diffuse); // Material.diffuse
+		glUniform4fv(iLocMSpecular, 1, OBJ->materials[group->material].specular); // Material.specular
+		glUniform1f(iLocMShininess, OBJ->materials[group->material].shininess); // Material.shininess
+		glVertexAttribPointer(iLocPosition, 3, GL_FLOAT, GL_FALSE, 0, groupVertices);
+		glVertexAttribPointer(iLocNormal, 3, GL_FLOAT, GL_FALSE, 0, groupNormals);
+		glDrawArrays(GL_TRIANGLES, 0, 3 * (group->numtriangles));
+		free(groupVertices);
+		free(groupNormals);
+		group = group->next;
+	}
+	
+	// bind array pointers to shader
+	// glVertexAttribPointer(iLocPosition, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+	// glVertexAttribPointer(iLocNormal, 3, GL_FLOAT, GL_FALSE, 0, normals);
+
+
 	// draw the array we just bound
-	glDrawArrays(GL_TRIANGLES, 0, 3 * (OBJ->numtriangles));
+	// glDrawArrays(GL_TRIANGLES, 0, 3 * (OBJ->numtriangles));
 
 	glutSwapBuffers();
 }
