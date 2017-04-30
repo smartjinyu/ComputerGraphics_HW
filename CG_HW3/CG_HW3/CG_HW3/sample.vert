@@ -28,7 +28,13 @@ struct MaterialParameters {
 };
 
 uniform MaterialParameters Material;
-uniform LightSourceParameters LightSource[3];
+uniform LightSourceParameters LightSource[4];
+uniform int ambientOn;
+uniform int diffuseOn;
+uniform int specularOn;
+uniform int directionalOn;
+uniform int pointOn;
+uniform int spotOn;
 
 void main() {
 	
