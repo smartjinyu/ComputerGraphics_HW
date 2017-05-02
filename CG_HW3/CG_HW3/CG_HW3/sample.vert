@@ -51,15 +51,15 @@ vec4 calcDirectionalLight(){
 	vec3 vv3normal = mat3(transpose(inverse(ModelTransMatrix)))*av3normal;
 	vec3 L = normalize(LightSource[1].position.xyz-vv4position.xyz);
 	vec3 N = normalize(vv3normal);
-	vec3 V = normalize (eyePos- vv4position.xyz);
+	vec3 V = normalize(eyePos- vv4position.xyz);
 	if(diffuseOn == 1){
 		vec4 diffuse = LightSource[1].diffuse * Material.diffuse * max(dot(L,N),0.0);
 		color += diffuse;
 	}
 	if(specularOn == 1){
-		vec3 R = reflect(-L,N);
-		float spec = pow(max(dot(V,R),0.0),Material.shininess);
-		color += Material.specular * LightSource[1].specular  * spec;
+		vec3 R = normalize(reflect(-L,N));
+		float spec = pow(max(dot(V,R),0.0),65.0);
+		color += Material.specular * LightSource[1].specular * spec;
 	}
 	return color;
 }

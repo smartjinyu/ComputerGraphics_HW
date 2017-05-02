@@ -77,11 +77,11 @@ GLint iLocEyePosition;
 #define numOfModels 5
 char filename[numOfModels][256] = { "NormalModels/High/dragon10KN.obj",
 "NormalModels/Medium/bunny5KN.obj",
-"NormalModels/High/lucy25KN.obj",
+"NormalModels/Low/sphereN.obj",
 "NormalModels/High/happy10KN.obj",
 "NormalModels/High/brain18KN.obj", };
 
-int modelIndex = 0;
+int modelIndex = 1;
 
 GLMmodel* OBJ;
 GLfloat* vertices; // index from 0 - 9 * group->numtriangles-1 is group 1's vertices, and so on
@@ -187,10 +187,11 @@ void traverseColorModel()
 			int indv2 = OBJ->triangles[triangleID].vindices[1];
 			int indv3 = OBJ->triangles[triangleID].vindices[2];
 
-			// the index of each color
-			int indc1 = OBJ->triangles[triangleID].nindices[0];
-			int indc2 = OBJ->triangles[triangleID].nindices[1];
-			int indc3 = OBJ->triangles[triangleID].nindices[2];
+			// the index of each normal
+			int indn1 = OBJ->triangles[triangleID].nindices[0];
+			int indn2 = OBJ->triangles[triangleID].nindices[1];
+			int indn3 = OBJ->triangles[triangleID].nindices[2];
+
 
 			// vertices
 
@@ -226,17 +227,17 @@ void traverseColorModel()
 
 			// colors
 			
-			normals[offsetIndex + i * 9 + 0] = OBJ->normals[indc1 * 3 + 0];
-			normals[offsetIndex + i * 9 + 1] = OBJ->normals[indc1 * 3 + 1];
-			normals[offsetIndex + i * 9 + 2] = OBJ->normals[indc1 * 3 + 2];
+			normals[offsetIndex + i * 9 + 0] = OBJ->normals[indn1 * 3 + 0];
+			normals[offsetIndex + i * 9 + 1] = OBJ->normals[indn1 * 3 + 1];
+			normals[offsetIndex + i * 9 + 2] = OBJ->normals[indn1 * 3 + 2];
 
-			normals[offsetIndex + i * 9 + 3] = OBJ->normals[indc2 * 3 + 0];
-			normals[offsetIndex + i * 9 + 4] = OBJ->normals[indc2 * 3 + 1];
-			normals[offsetIndex + i * 9 + 5] = OBJ->normals[indc2 * 3 + 2];
+			normals[offsetIndex + i * 9 + 3] = OBJ->normals[indn2 * 3 + 0];
+			normals[offsetIndex + i * 9 + 4] = OBJ->normals[indn2 * 3 + 1];
+			normals[offsetIndex + i * 9 + 5] = OBJ->normals[indn2 * 3 + 2];
 
-			normals[offsetIndex + i * 9 + 6] = OBJ->normals[indc3 * 3 + 0];
-			normals[offsetIndex + i * 9 + 7] = OBJ->normals[indc3 * 3 + 1];
-			normals[offsetIndex + i * 9 + 8] = OBJ->normals[indc3 * 3 + 2];
+			normals[offsetIndex + i * 9 + 6] = OBJ->normals[indn3 * 3 + 0];
+			normals[offsetIndex + i * 9 + 7] = OBJ->normals[indn3 * 3 + 1];
+			normals[offsetIndex + i * 9 + 8] = OBJ->normals[indn3 * 3 + 2];
 
 		}
 		offsetIndex += 9 * group->numtriangles;
@@ -244,68 +245,7 @@ void traverseColorModel()
 		printf("offsetIndex = %d\n",offsetIndex);
 	}
 	
-	/*
-	for (i = 0; i < (int)OBJ->numtriangles; i++)
-	{
-		// the index of each vertex
-		int indv1 = OBJ->triangles[i].vindices[0];
-		int indv2 = OBJ->triangles[i].vindices[1];
-		int indv3 = OBJ->triangles[i].vindices[2];
 
-		// the index of each color
-		int indc1 = indv1;
-		int indc2 = indv2;
-		int indc3 = indv3;
-
-		// vertices
-
-		vertices[i * 9 + 0] = OBJ->vertices[indv1 * 3 + 0];
-		vertices[i * 9 + 1] = OBJ->vertices[indv1 * 3 + 1];
-		vertices[i * 9 + 2] = OBJ->vertices[indv1 * 3 + 2];
-		if (vertices[i * 9 + 0] > max_x) max_x = vertices[i * 9 + 0];
-		if (vertices[i * 9 + 1] > max_y) max_y = vertices[i * 9 + 1];
-		if (vertices[i * 9 + 2] > max_z) max_z = vertices[i * 9 + 2];
-		if (vertices[i * 9 + 0] < min_x) min_x = vertices[i * 9 + 0];
-		if (vertices[i * 9 + 1] < min_y) min_y = vertices[i * 9 + 1];
-		if (vertices[i * 9 + 2] < min_z) min_z = vertices[i * 9 + 2];
-
-		vertices[i * 9 + 3] = OBJ->vertices[indv2 * 3 + 0];
-		vertices[i * 9 + 4] = OBJ->vertices[indv2 * 3 + 1];
-		vertices[i * 9 + 5] = OBJ->vertices[indv2 * 3 + 2];
-		if (vertices[i * 9 + 3] > max_x) max_x = vertices[i * 9 + 3];
-		if (vertices[i * 9 + 4] > max_y) max_y = vertices[i * 9 + 4];
-		if (vertices[i * 9 + 5] > max_z) max_z = vertices[i * 9 + 5];
-		if (vertices[i * 9 + 3] < min_x) min_x = vertices[i * 9 + 3];
-		if (vertices[i * 9 + 4] < min_y) min_y = vertices[i * 9 + 4];
-		if (vertices[i * 9 + 5] < min_z) min_z = vertices[i * 9 + 5];
-
-		vertices[i * 9 + 6] = OBJ->vertices[indv3 * 3 + 0];
-		vertices[i * 9 + 7] = OBJ->vertices[indv3 * 3 + 1];
-		vertices[i * 9 + 8] = OBJ->vertices[indv3 * 3 + 2];
-		if (vertices[i * 9 + 6] > max_x) max_x = vertices[i * 9 + 6];
-		if (vertices[i * 9 + 7] > max_y) max_y = vertices[i * 9 + 7];
-		if (vertices[i * 9 + 8] > max_z) max_z = vertices[i * 9 + 8];
-		if (vertices[i * 9 + 6] < min_x) min_x = vertices[i * 9 + 6];
-		if (vertices[i * 9 + 7] < min_y) min_y = vertices[i * 9 + 7];
-		if (vertices[i * 9 + 8] < min_z) min_z = vertices[i * 9 + 8];
-
-		// colors
-
-		normals[i * 9 + 0] = OBJ->normals[indv1 * 3 + 0];
-		normals[i * 9 + 1] = OBJ->normals[indv1 * 3 + 1];
-		normals[i * 9 + 2] = OBJ->normals[indv1 * 3 + 2];
-
-		normals[i * 9 + 3] = OBJ->normals[indv2 * 3 + 0];
-		normals[i * 9 + 4] = OBJ->normals[indv2 * 3 + 1];
-		normals[i * 9 + 5] = OBJ->normals[indv2 * 3 + 2];
-
-		normals[i * 9 + 6] = OBJ->normals[indv3 * 3 + 0];
-		normals[i * 9 + 7] = OBJ->normals[indv3 * 3 + 1];
-		normals[i * 9 + 8] = OBJ->normals[indv3 * 3 + 2];
-
-
-	}
-	*/
 
 	float normalize_scale = max(max(abs(max_x - min_x), abs(max_y - min_y)), abs(max_z - min_z));
 
@@ -415,6 +355,7 @@ void onDisplay(void)
 		glUniform4fv(iLocMDiffuse, 1, OBJ->materials[group->material].diffuse); // Material.diffuse
 		glUniform4fv(iLocMSpecular, 1, OBJ->materials[group->material].specular); // Material.specular
 		glUniform1f(iLocMShininess, OBJ->materials[group->material].shininess); // Material.shininess
+		//printf("shininess = %f\n", OBJ->materials[group->material].shininess);
 		glVertexAttribPointer(iLocPosition, 3, GL_FLOAT, GL_FALSE, 0, vertices + offsetIndex);
 		glVertexAttribPointer(iLocNormal, 3, GL_FLOAT, GL_FALSE, 0, normals + offsetIndex);
 		glDrawArrays(GL_TRIANGLES, 0, 3 * (group->numtriangles));
@@ -474,7 +415,7 @@ void setLightingSource() {
 	// 1: directional light
 	lightsource[1].position[0] = 0;
 	lightsource[1].position[1] = 1;
-	lightsource[1].position[2] = 0;
+	lightsource[1].position[2] = 1;
 	lightsource[1].position[3] = 1;
 	lightsource[1].ambient[0] = 0;
 	lightsource[1].ambient[1] = 0;
@@ -791,7 +732,7 @@ int main(int argc, char **argv)
 
 	// load obj models through glm
 	loadOBJModel();
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	// register glut callback functions
 	glutDisplayFunc(onDisplay);
