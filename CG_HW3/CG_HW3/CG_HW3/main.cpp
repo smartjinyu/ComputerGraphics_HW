@@ -456,7 +456,7 @@ void setLightingSource() {
 
 	// 3: spot light
 	lightsource[3].position[0] = 0;
-	lightsource[3].position[1] = 0;
+	lightsource[3].position[1] = 2;
 	lightsource[3].position[2] = 2;
 	lightsource[3].position[3] = 1;
 	lightsource[3].ambient[0] = 0;
@@ -472,12 +472,12 @@ void setLightingSource() {
 	lightsource[3].specular[2] = 1;
 	lightsource[3].specular[3] = 1;
 	lightsource[3].spotDirection[0] = 0;
-	lightsource[3].spotDirection[1] = 0;
+	lightsource[3].spotDirection[1] = 1;
 	lightsource[3].spotDirection[2] = -2;
 	lightsource[3].spotDirection[3] = 0;
 	lightsource[3].spotExponent = 0.1;
 	lightsource[3].spotCutoff = 45;
-	lightsource[2].spotCosCutoff = 0.9659258628; // 1/12 pi
+	lightsource[2].spotCosCutoff = 0.5; // 1/12 pi
 
 }
 
