@@ -58,8 +58,6 @@
 
 
 
-
-
 #ifndef max
 # define max(a,b) (((a)>(b))?(a):(b))
 # define min(a,b) (((a)<(b))?(a):(b))
@@ -73,10 +71,12 @@ GLint iLocMVP;
 GLint iLocMDiffuse, iLocMAmbient, iLocMSpecular, iLocMShininess;
 GLint iLocAmbientOn, iLocDiffuseOn, iLocSpecularOn;
 GLint iLocDirectionalOn, iLocPointOn, iLocSpotOn;
+GLint iLocNormalTransform, iLocModelTransform, iLocViewTransform;
+GLint iLocEyePosition;
 
 #define numOfModels 5
 char filename[numOfModels][256] = { "NormalModels/High/dragon10KN.obj",
-"NormalModels/High/elephant16KN.obj",
+"NormalModels/Medium/bunny5KN.obj",
 "NormalModels/High/lucy25KN.obj",
 "NormalModels/High/happy10KN.obj",
 "NormalModels/High/brain18KN.obj", };
@@ -95,7 +95,7 @@ Vector3 centerPos = Vector3(0, 0, 0);
 Vector3 upVec = Vector3(0, 1, 0);// in fact, this vector should be called as P1P3
 
 int ambientOn = 1, diffuseOn = 1, specularOn = 1;
-int directionalOn = 0, pointOn = 0, spotOn = 0;
+int directionalOn = 1, pointOn = 0, spotOn = 0;
 
 
 #define numOfLightSources 4
@@ -175,7 +175,7 @@ void traverseColorModel()
 	float min_x = OBJ->vertices[3];
 	float min_y = OBJ->vertices[4];
 	float min_z = OBJ->vertices[5];
-
+	
 	GLMgroup* group = OBJ->groups;
 	int offsetIndex = 0;
 	// index from 0 - 9 * group->numtriangles-1 is group 1's vertices and normals, and so on
@@ -188,9 +188,9 @@ void traverseColorModel()
 			int indv3 = OBJ->triangles[triangleID].vindices[2];
 
 			// the index of each color
-			int indc1 = indv1;
-			int indc2 = indv2;
-			int indc3 = indv3;
+			int indc1 = OBJ->triangles[triangleID].nindices[0];
+			int indc2 = OBJ->triangles[triangleID].nindices[1];
+			int indc3 = OBJ->triangles[triangleID].nindices[2];
 
 			// vertices
 
@@ -225,24 +225,25 @@ void traverseColorModel()
 			if (vertices[offsetIndex + i * 9 + 8] < min_z) min_z = vertices[offsetIndex + i * 9 + 8];
 
 			// colors
+			
+			normals[offsetIndex + i * 9 + 0] = OBJ->normals[indc1 * 3 + 0];
+			normals[offsetIndex + i * 9 + 1] = OBJ->normals[indc1 * 3 + 1];
+			normals[offsetIndex + i * 9 + 2] = OBJ->normals[indc1 * 3 + 2];
 
-			normals[offsetIndex + i * 9 + 0] = OBJ->normals[indv1 * 3 + 0];
-			normals[offsetIndex + i * 9 + 1] = OBJ->normals[indv1 * 3 + 1];
-			normals[offsetIndex + i * 9 + 2] = OBJ->normals[indv1 * 3 + 2];
+			normals[offsetIndex + i * 9 + 3] = OBJ->normals[indc2 * 3 + 0];
+			normals[offsetIndex + i * 9 + 4] = OBJ->normals[indc2 * 3 + 1];
+			normals[offsetIndex + i * 9 + 5] = OBJ->normals[indc2 * 3 + 2];
 
-			normals[offsetIndex + i * 9 + 3] = OBJ->normals[indv2 * 3 + 0];
-			normals[offsetIndex + i * 9 + 4] = OBJ->normals[indv2 * 3 + 1];
-			normals[offsetIndex + i * 9 + 5] = OBJ->normals[indv2 * 3 + 2];
+			normals[offsetIndex + i * 9 + 6] = OBJ->normals[indc3 * 3 + 0];
+			normals[offsetIndex + i * 9 + 7] = OBJ->normals[indc3 * 3 + 1];
+			normals[offsetIndex + i * 9 + 8] = OBJ->normals[indc3 * 3 + 2];
 
-			normals[offsetIndex + i * 9 + 6] = OBJ->normals[indv3 * 3 + 0];
-			normals[offsetIndex + i * 9 + 7] = OBJ->normals[indv3 * 3 + 1];
-			normals[offsetIndex + i * 9 + 8] = OBJ->normals[indv3 * 3 + 2];
 		}
 		offsetIndex += 9 * group->numtriangles;
 		group = group->next;
-
+		printf("offsetIndex = %d\n",offsetIndex);
 	}
-
+	
 	/*
 	for (i = 0; i < (int)OBJ->numtriangles; i++)
 	{
@@ -343,6 +344,24 @@ void onIdle()
 	glutPostRedisplay();
 }
 
+void passMatrixToShader(GLint iLoc, Matrix4 matrix) {
+	// pass 4x4 matrix to shader, row-major --> column major
+	GLfloat MATRIX[16];
+	// row-major ---> column-major
+	MATRIX[0] = matrix[0];  MATRIX[4] = matrix[1];   MATRIX[8] = matrix[2];    MATRIX[12] = matrix[3];
+	MATRIX[1] = matrix[4];  MATRIX[5] = matrix[5];   MATRIX[9] = matrix[6];    MATRIX[13] = matrix[7];
+	MATRIX[2] = matrix[8];  MATRIX[6] = matrix[9];   MATRIX[10] = matrix[10];   MATRIX[14] = matrix[11];
+	MATRIX[3] = matrix[12]; MATRIX[7] = matrix[13];  MATRIX[11] = matrix[14];   MATRIX[15] = matrix[15];
+	glUniformMatrix4fv(iLoc, 1, GL_FALSE, MATRIX);
+}
+
+void passVector3ToShader(GLint iLoc, Vector3 vector) {
+	GLfloat vec[3];
+	vec[0] = vector[0];
+	vec[1] = vector[1];
+	vec[2] = vector[2];
+	glUniform3fv(iLoc, 1, vec);
+}
 
 void onDisplay(void)
 {
@@ -358,25 +377,19 @@ void onDisplay(void)
 	Matrix4 S;
 	Matrix4 R;
 
-	Matrix4 M = Matrix4(
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		0, 0, 0, 1);
+	Matrix4 M = N;
 	Matrix4 V = getViewTransMatrix();
 	Matrix4 P = getPerpectiveMatrix();
 
-	Matrix4 MVP = P*V*N;
-
+	Matrix4 MVP = P*V*M;
+	/*
 	GLfloat mvp[16];
 	// row-major ---> column-major
 	mvp[0] = MVP[0];  mvp[4] = MVP[1];   mvp[8] = MVP[2];    mvp[12] = MVP[3];
 	mvp[1] = MVP[4];  mvp[5] = MVP[5];   mvp[9] = MVP[6];    mvp[13] = MVP[7];
 	mvp[2] = MVP[8];  mvp[6] = MVP[9];   mvp[10] = MVP[10];   mvp[14] = MVP[11];
 	mvp[3] = MVP[12]; mvp[7] = MVP[13];  mvp[11] = MVP[14];   mvp[15] = MVP[15];
-
-	// bind uniform matrix to shader
-	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, mvp); // mvp
+	*/
 
 	// pass lightsource and effect on/off info to shader
 	glUniform1i(iLocAmbientOn, ambientOn);
@@ -386,6 +399,13 @@ void onDisplay(void)
 	glUniform1i(iLocPointOn, pointOn);
 	glUniform1i(iLocSpotOn, spotOn);
 
+	// matrix parameters
+	passMatrixToShader(iLocMVP, MVP);
+	passMatrixToShader(iLocNormalTransform, N);
+	passMatrixToShader(iLocViewTransform, V);
+	passMatrixToShader(iLocModelTransform, M);
+
+	passVector3ToShader(iLocEyePosition, eyePos);
 
 	//pass model material vertices and normals value to the shader
 	GLMgroup* group = OBJ->groups;
@@ -401,6 +421,23 @@ void onDisplay(void)
 		offsetIndex += 9 * group->numtriangles;
 		group = group->next;
 	}
+
+
+	
+
+
+	/*
+		// bind array pointers to shader
+	glVertexAttribPointer(iLocPosition, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+	glVertexAttribPointer(iLocNormal, 3, GL_FLOAT, GL_FALSE, 0, normals);
+	
+	// bind uniform matrix to shader
+	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, mvp);
+
+	// draw the array we just bound
+	glDrawArrays(GL_TRIANGLES, 0, 3*(OBJ->numtriangles));
+	*/
+	
 
 	glutSwapBuffers();
 }
@@ -557,8 +594,11 @@ void setShaders()
 	iLocDirectionalOn = glGetUniformLocation(p, "directionalOn");
 	iLocPointOn = glGetUniformLocation(p, "pointOn");
 	iLocSpotOn = glGetUniformLocation(p, "spotOn");
-
-
+	iLocNormalTransform = glGetUniformLocation(p, "NormalTransMatrix");
+	iLocModelTransform = glGetUniformLocation(p, "ModelTransMatrix");
+	iLocViewTransform = glGetUniformLocation(p, "ViewTransMatrix");
+	iLocEyePosition = glGetUniformLocation(p, "eyePos");;
+	
 	glUseProgram(p);
 
 	// pass lightsource parameters to shader
@@ -751,6 +791,7 @@ int main(int argc, char **argv)
 
 	// load obj models through glm
 	loadOBJModel();
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	// register glut callback functions
 	glutDisplayFunc(onDisplay);
