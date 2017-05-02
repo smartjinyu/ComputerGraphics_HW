@@ -436,7 +436,7 @@ void setLightingSource() {
 	// 2: point light
 	lightsource[2].position[0] = 1;
 	lightsource[2].position[1] = 0;
-	lightsource[2].position[2] = -1;
+	lightsource[2].position[2] = 0;
 	lightsource[2].position[3] = 1;
 	lightsource[2].ambient[0] = 0;
 	lightsource[2].ambient[1] = 0;
