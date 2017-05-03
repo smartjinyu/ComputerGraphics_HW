@@ -84,6 +84,7 @@ GLint iLocAmbientOn, iLocDiffuseOn, iLocSpecularOn;
 GLint iLocDirectionalOn, iLocPointOn, iLocSpotOn;
 GLint iLocNormalTransform, iLocModelTransform, iLocViewTransform;
 GLint iLocEyePosition;
+GLint iLocPointPosition, iLocSpotPosition, iLocSpotExponent, iLocSpotCutoff, iLocSpotCosCutoff;
 
 #define numOfModels 5
 char filename[numOfModels][256] = { "NormalModels/High/dragon10KN.obj",
@@ -110,6 +111,7 @@ int directionalOn = 1, pointOn = 0, spotOn = 0;
 
 int autoRotateMode = 0;
 float rotateSpeed = 300.0; // it is the reciprocal of actual rotate speed
+
 #define numOfLightSources 4
 struct LightSourceParameters {
 	float ambient[4];
@@ -187,7 +189,7 @@ void traverseColorModel()
 	float min_x = OBJ->vertices[3];
 	float min_y = OBJ->vertices[4];
 	float min_z = OBJ->vertices[5];
-	
+
 	GLMgroup* group = OBJ->groups;
 	int offsetIndex = 0;
 	// index from 0 - 9 * group->numtriangles-1 is group 1's vertices and normals, and so on
@@ -238,7 +240,7 @@ void traverseColorModel()
 			if (vertices[offsetIndex + i * 9 + 8] < min_z) min_z = vertices[offsetIndex + i * 9 + 8];
 
 			// colors
-			
+
 			normals[offsetIndex + i * 9 + 0] = OBJ->normals[indn1 * 3 + 0];
 			normals[offsetIndex + i * 9 + 1] = OBJ->normals[indn1 * 3 + 1];
 			normals[offsetIndex + i * 9 + 2] = OBJ->normals[indn1 * 3 + 2];
@@ -254,9 +256,9 @@ void traverseColorModel()
 		}
 		offsetIndex += 9 * group->numtriangles;
 		group = group->next;
-		printf("offsetIndex = %d\n",offsetIndex);
+		printf("offsetIndex = %d\n", offsetIndex);
 	}
-	
+
 
 
 	float normalize_scale = max(max(abs(max_x - min_x), abs(max_y - min_y)), abs(max_z - min_z));
@@ -338,7 +340,7 @@ void onDisplay(void)
 	}
 	else {
 		float t = glutGet(GLUT_ELAPSED_TIME);
-		float offsetTime = t/rotateSpeed;
+		float offsetTime = t / rotateSpeed;
 		R = Matrix4(
 			cos(offsetTime), 0, sin(offsetTime), 0,
 			0, 1, 0, 0,
@@ -375,6 +377,13 @@ void onDisplay(void)
 	passMatrixToShader(iLocModelTransform, M);
 
 	passVector3ToShader(iLocEyePosition, eyePos);
+
+	// light source parameters which may change
+	glUniform4fv(iLocPointPosition, 1, lightsource[2].position);
+	glUniform4fv(iLocSpotPosition, 1, lightsource[3].position);
+	glUniform1f(iLocSpotExponent, lightsource[3].spotExponent);
+	glUniform1f(iLocSpotCutoff, lightsource[3].spotCutoff);
+	glUniform1f(iLocSpotCosCutoff, lightsource[3].spotCosCutoff);
 
 	//pass model material vertices and normals value to the shader
 	GLMgroup* group = OBJ->groups;
@@ -413,7 +422,7 @@ void showShaderCompileStatus(GLuint shader, GLint *shaderCompiled)
 	}
 }
 void setLightingSource() {
-	float PLRange = 100.0; // todo
+	float PLRange = 70.0; // todo
 	// 0: Ambient
 	lightsource[0].position[0] = 0;
 	lightsource[0].position[1] = 0;
@@ -447,7 +456,7 @@ void setLightingSource() {
 
 	// 2: point light
 	lightsource[2].position[0] = 1;
-	lightsource[2].position[1] = 0;
+	lightsource[2].position[1] = 2;
 	lightsource[2].position[2] = 0;
 	lightsource[2].position[3] = 1;
 	lightsource[2].ambient[0] = 0;
@@ -550,8 +559,14 @@ void setShaders()
 	iLocNormalTransform = glGetUniformLocation(p, "NormalTransMatrix");
 	iLocModelTransform = glGetUniformLocation(p, "ModelTransMatrix");
 	iLocViewTransform = glGetUniformLocation(p, "ViewTransMatrix");
-	iLocEyePosition = glGetUniformLocation(p, "eyePos");;
-	
+	iLocEyePosition = glGetUniformLocation(p, "eyePos");
+
+	iLocPointPosition = glGetUniformLocation(p, "LightSource[2].position");
+	iLocSpotPosition = glGetUniformLocation(p, "LightSource[3].position");
+	iLocSpotExponent = glGetUniformLocation(p, "LightSource[3].spotExponent");
+	iLocSpotCutoff = glGetUniformLocation(p, "LightSource[3].spotCutoff");
+	iLocSpotCosCutoff = glGetUniformLocation(p, "LightSource[3].spotCosCutoff");
+
 	glUseProgram(p);
 
 	// pass lightsource parameters to shader
@@ -568,7 +583,7 @@ void setShaders()
 	glUniform1f(glGetUniformLocation(p, "LightSource[1].linearAttenuation"), lightsource[1].linearAttenuation);
 	glUniform1f(glGetUniformLocation(p, "LightSource[1].quadraticAttenuation"), lightsource[1].quadraticAttenuation);
 
-	glUniform4fv(glGetUniformLocation(p, "LightSource[2].position"), 1, lightsource[2].position);
+	glUniform4fv(iLocPointPosition, 1, lightsource[2].position);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[2].ambient"), 1, lightsource[2].ambient);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[2].diffuse"), 1, lightsource[2].diffuse);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[2].specular"), 1, lightsource[2].specular);
@@ -576,14 +591,14 @@ void setShaders()
 	glUniform1f(glGetUniformLocation(p, "LightSource[2].linearAttenuation"), lightsource[2].linearAttenuation);
 	glUniform1f(glGetUniformLocation(p, "LightSource[2].quadraticAttenuation"), lightsource[2].quadraticAttenuation);
 
-	glUniform4fv(glGetUniformLocation(p, "LightSource[3].position"), 1, lightsource[3].position);
+	glUniform4fv(iLocSpotPosition, 1, lightsource[3].position);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[3].ambient"), 1, lightsource[3].ambient);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[3].diffuse"), 1, lightsource[3].diffuse);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[3].specular"), 1, lightsource[3].specular);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[3].spotDirection"), 1, lightsource[3].spotDirection);
-	glUniform1f(glGetUniformLocation(p, "LightSource[3].spotExponent"), lightsource[3].spotExponent);
-	glUniform1f(glGetUniformLocation(p, "LightSource[3].spotCutoff"), lightsource[3].spotCutoff);
-	glUniform1f(glGetUniformLocation(p, "LightSource[3].spotCosCutoff"), lightsource[3].spotCosCutoff);
+	glUniform1f(iLocSpotExponent, lightsource[3].spotExponent);
+	glUniform1f(iLocSpotCutoff, lightsource[3].spotCutoff);
+	glUniform1f(iLocSpotCosCutoff, lightsource[3].spotCosCutoff);
 
 
 }
@@ -661,6 +676,7 @@ void onKeyboard(unsigned char key, int x, int y)
 		printf("press 'z' 'x' to change model\n");
 		printf("press 'r' to toggle auto rotation\n");
 		printf("press 'v' 'b' to change the rotatation speed\n");
+		printf("use arrow buttom to move the point light\n");
 		printf("----------Help Menu----------\n");
 		break;
 	case GLUT_KEY_q:
@@ -698,39 +714,58 @@ void onKeyboard(unsigned char key, int x, int y)
 		printf("Turn %s auto rotate\n", autoRotateMode ? "ON" : "OFF");
 		break;
 	case GLUT_KEY_v:
-		if (rotateSpeed > 50.0) {
-			printf("Speed up the auto rotation\n");
-			rotateSpeed -= 50.0;
-		}
-		else {
-			printf("Please do not try to rotate too fast\n");
+		if (autoRotateMode == 1) {
+			if (rotateSpeed > 50.0) {
+				printf("Speed up the auto rotation\n");
+				rotateSpeed -= 50.0;
+			}
+			else {
+				printf("Please do not try to rotate too fast\n");
+			}
 		}
 		break;
 	case GLUT_KEY_b:
-		rotateSpeed += 50.0;
-		printf("Slow down the auot rotation\n");
+		if (autoRotateMode == 1) {
+			rotateSpeed += 50.0;
+			printf("Slow down the auot rotation\n");
+		}
 		break;
 	}
 	//printf("\n");
 }
 
 void onKeyboardSpecial(int key, int x, int y) {
-	printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
+	//printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
 	switch (key)
 	{
 	case GLUT_KEY_LEFT:
-		printf("key: LEFT ARROW");
+		//printf("key: LEFT ARROW");
+		if (pointOn == 1) {
+			lightsource[2].position[0] -= 0.5;
+		}
 		break;
 
 	case GLUT_KEY_RIGHT:
-		printf("key: RIGHT ARROW");
+		//printf("key: RIGHT ARROW");
+		if (pointOn == 1) {
+			lightsource[2].position[0] += 0.5;
+		}
 		break;
-
+	case GLUT_KEY_UP:
+		if (pointOn == 1) {
+			lightsource[2].position[1] += 0.5;
+		}
+		break;
+	case GLUT_KEY_DOWN:
+		if (pointOn == 1) {
+			lightsource[2].position[1] -= 0.5;
+		}
+		break;
 	default:
-		printf("key: 0x%02X      ", key);
+		//printf("key: 0x%02X      ", key);
 		break;
 	}
-	printf("\n");
+	//printf("\n");
 }
 
 
