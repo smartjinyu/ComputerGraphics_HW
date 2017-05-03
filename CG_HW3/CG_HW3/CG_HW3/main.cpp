@@ -56,6 +56,17 @@
 # define GLUT_KEY_d 0x0064
 #endif
 
+#ifndef GLUT_KEY_r
+# define GLUT_KEY_r 0x0072
+#endif
+
+#ifndef GLUT_KEY_v
+# define GLUT_KEY_v 0x0076
+#endif
+
+#ifndef GLUT_KEY_b
+# define GLUT_KEY_b 0x0062
+#endif
 
 
 #ifndef max
@@ -97,7 +108,8 @@ Vector3 upVec = Vector3(0, 1, 0);// in fact, this vector should be called as P1P
 int ambientOn = 1, diffuseOn = 1, specularOn = 1;
 int directionalOn = 1, pointOn = 0, spotOn = 0;
 
-
+int autoRotateMode = 0;
+float rotateSpeed = 300.0; // it is the reciprocal of actual rotate speed
 #define numOfLightSources 4
 struct LightSourceParameters {
 	float ambient[4];
@@ -303,6 +315,8 @@ void passVector3ToShader(GLint iLoc, Vector3 vector) {
 	glUniform3fv(iLoc, 1, vec);
 }
 
+
+
 void onDisplay(void)
 {
 	// clear canvas
@@ -316,8 +330,23 @@ void onDisplay(void)
 	Matrix4 T;
 	Matrix4 S;
 	Matrix4 R;
-
-	Matrix4 M = N;
+	if (autoRotateMode == 0) {
+		R = Matrix4(1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1);
+	}
+	else {
+		float t = glutGet(GLUT_ELAPSED_TIME);
+		float offsetTime = t/rotateSpeed;
+		R = Matrix4(
+			cos(offsetTime), 0, sin(offsetTime), 0,
+			0, 1, 0, 0,
+			-sin(offsetTime), 0, cos(offsetTime), 0,
+			0, 0, 0, 1);
+		// rotate around
+	}
+	Matrix4 M = R*N;
 	Matrix4 V = getViewTransMatrix();
 	Matrix4 P = getPerpectiveMatrix();
 
@@ -362,23 +391,6 @@ void onDisplay(void)
 		offsetIndex += 9 * group->numtriangles;
 		group = group->next;
 	}
-
-
-	
-
-
-	/*
-		// bind array pointers to shader
-	glVertexAttribPointer(iLocPosition, 3, GL_FLOAT, GL_FALSE, 0, vertices);
-	glVertexAttribPointer(iLocNormal, 3, GL_FLOAT, GL_FALSE, 0, normals);
-	
-	// bind uniform matrix to shader
-	glUniformMatrix4fv(iLocMVP, 1, GL_FALSE, mvp);
-
-	// draw the array we just bound
-	glDrawArrays(GL_TRIANGLES, 0, 3*(OBJ->numtriangles));
-	*/
-	
 
 	glutSwapBuffers();
 }
@@ -456,9 +468,9 @@ void setLightingSource() {
 
 	// 3: spot light
 	lightsource[3].position[0] = 0;
-	lightsource[3].position[1] = 2;
-	lightsource[3].position[2] = 2;
-	lightsource[3].position[3] = 1;
+	lightsource[3].position[1] = 0;
+	lightsource[3].position[2] = 0;
+	lightsource[3].position[3] = 2;
 	lightsource[3].ambient[0] = 0;
 	lightsource[3].ambient[1] = 0;
 	lightsource[3].ambient[2] = 0;
@@ -473,8 +485,8 @@ void setLightingSource() {
 	lightsource[3].specular[3] = 1;
 	lightsource[3].spotDirection[0] = 0;
 	lightsource[3].spotDirection[1] = 1;
-	lightsource[3].spotDirection[2] = -2;
-	lightsource[3].spotDirection[3] = 0;
+	lightsource[3].spotDirection[2] = 1;
+	lightsource[3].spotDirection[3] = 1;
 	lightsource[3].spotExponent = 0.1;
 	lightsource[3].spotCutoff = 45;
 	lightsource[2].spotCosCutoff = 0.5; // 1/12 pi
@@ -647,6 +659,8 @@ void onKeyboard(unsigned char key, int x, int y)
 		printf("press 'q' 'w' 'e' to toggle the light source\n");
 		printf("press 'a' 's' 'd' to toggle the light arrtibute\n");
 		printf("press 'z' 'x' to change model\n");
+		printf("press 'r' to toggle auto rotation\n");
+		printf("press 'v' 'b' to change the rotatation speed\n");
 		printf("----------Help Menu----------\n");
 		break;
 	case GLUT_KEY_q:
@@ -679,7 +693,23 @@ void onKeyboard(unsigned char key, int x, int y)
 		printf("Turn %s specular effect\n", specularOn ? "ON" : "OFF");
 		printStatus();
 		break;
-
+	case GLUT_KEY_r:
+		autoRotateMode = (autoRotateMode + 1) % 2;
+		printf("Turn %s auto rotate\n", autoRotateMode ? "ON" : "OFF");
+		break;
+	case GLUT_KEY_v:
+		if (rotateSpeed > 50.0) {
+			printf("Speed up the auto rotation\n");
+			rotateSpeed -= 50.0;
+		}
+		else {
+			printf("Please do not try to rotate too fast\n");
+		}
+		break;
+	case GLUT_KEY_b:
+		rotateSpeed += 50.0;
+		printf("Slow down the auot rotation\n");
+		break;
 	}
 	//printf("\n");
 }
