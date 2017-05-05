@@ -93,7 +93,7 @@ char filename[numOfModels][256] = { "NormalModels/High/dragon10KN.obj",
 "NormalModels/High/happy10KN.obj",
 "NormalModels/High/brain18KN.obj", };
 
-int modelIndex = 1;
+int modelIndex = 0;
 
 GLMmodel* OBJ;
 GLfloat* vertices; // index from 0 - 9 * group->numtriangles-1 is group 1's vertices, and so on
@@ -112,6 +112,8 @@ int directionalOn = 1, pointOn = 0, spotOn = 0;
 int autoRotateMode = 0;
 float rotateSpeed = 300.0; // it is the reciprocal of actual rotate speed
 
+int windowHeight, windowWidth;
+
 #define numOfLightSources 4
 struct LightSourceParameters {
 	float ambient[4];
@@ -119,7 +121,7 @@ struct LightSourceParameters {
 	float specular[4];
 	float position[4];
 	float halfVector[4];
-	float spotDirection[4];
+	float spotDirection[3];
 	float spotExponent;
 	float spotCutoff; // (range: [0.0,90.0], 180.0)
 	float spotCosCutoff; // (range: [1.0,0.0],-1.0)
@@ -478,8 +480,8 @@ void setLightingSource() {
 	// 3: spot light
 	lightsource[3].position[0] = 0;
 	lightsource[3].position[1] = 0;
-	lightsource[3].position[2] = 0;
-	lightsource[3].position[3] = 2;
+	lightsource[3].position[2] = 1;
+	lightsource[3].position[3] = 1;
 	lightsource[3].ambient[0] = 0;
 	lightsource[3].ambient[1] = 0;
 	lightsource[3].ambient[2] = 0;
@@ -493,12 +495,11 @@ void setLightingSource() {
 	lightsource[3].specular[2] = 1;
 	lightsource[3].specular[3] = 1;
 	lightsource[3].spotDirection[0] = 0;
-	lightsource[3].spotDirection[1] = 1;
-	lightsource[3].spotDirection[2] = 1;
-	lightsource[3].spotDirection[3] = 1;
-	lightsource[3].spotExponent = 0.1;
+	lightsource[3].spotDirection[1] = 0;
+	lightsource[3].spotDirection[2] = -2;
+	lightsource[3].spotExponent = 0.5;
 	lightsource[3].spotCutoff = 45;
-	lightsource[2].spotCosCutoff = 0.5; // 1/12 pi
+	lightsource[3].spotCosCutoff = 0.99; // 1/12 pi
 
 }
 
@@ -595,7 +596,7 @@ void setShaders()
 	glUniform4fv(glGetUniformLocation(p, "LightSource[3].ambient"), 1, lightsource[3].ambient);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[3].diffuse"), 1, lightsource[3].diffuse);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[3].specular"), 1, lightsource[3].specular);
-	glUniform4fv(glGetUniformLocation(p, "LightSource[3].spotDirection"), 1, lightsource[3].spotDirection);
+	glUniform3fv(glGetUniformLocation(p, "LightSource[3].spotDirection"), 1, lightsource[3].spotDirection);
 	glUniform1f(iLocSpotExponent, lightsource[3].spotExponent);
 	glUniform1f(iLocSpotCutoff, lightsource[3].spotCutoff);
 	glUniform1f(iLocSpotCosCutoff, lightsource[3].spotCosCutoff);
@@ -615,30 +616,75 @@ void printStatus() {
 
 void onMouse(int who, int state, int x, int y)
 {
-	printf("%18s(): (%d, %d) ", __FUNCTION__, x, y);
+	//printf("%18s(): (%d, %d) \n", __FUNCTION__, x, y);
 
 	switch (who)
 	{
-	case GLUT_LEFT_BUTTON:   printf("left button   "); break;
+	case GLUT_LEFT_BUTTON: {
+		//printf("left button   "); 
+		if (spotOn == 1) {
+			lightsource[3].spotExponent += 0.1;
+			printf("Turn spotExponent up\n");
+		}
+		break;
+	}
 	case GLUT_MIDDLE_BUTTON: printf("middle button "); break;
-	case GLUT_RIGHT_BUTTON:  printf("right button  "); break;
-	case GLUT_WHEEL_UP:      printf("wheel up      "); break;
-	case GLUT_WHEEL_DOWN:    printf("wheel down    "); break;
-	default:                 printf("0x%02X          ", who); break;
+	case GLUT_RIGHT_BUTTON:  
+		//printf("right button  "); 
+		if (spotOn == 1) {
+			lightsource[3].spotExponent -= 0.1;
+			printf("Turn spotExponent down\n");
+		}
+
+		break;
+	case GLUT_WHEEL_UP: 
+		if (spotOn == 1) {
+			lightsource[3].spotCosCutoff -= 0.003;
+			printf("Turn CUT_OFF_ANGLE up\n");
+		}
+		//printf("wheel up      "); 
+		break;
+	case GLUT_WHEEL_DOWN:    
+		//printf("wheel down    "); 
+		if (spotOn == 1) {
+			lightsource[3].spotCosCutoff += 0.003;
+			printf("Turn CUT_OFF_ANGLE down\n");
+		}
+
+		break;
+	default:                 
+		//printf("0x%02X          ", who); 
+		break;
 	}
 
 	switch (state)
 	{
-	case GLUT_DOWN: printf("start "); break;
-	case GLUT_UP:   printf("end   "); break;
+	case GLUT_DOWN: 
+		//printf("start "); 
+		break;
+	case GLUT_UP:   
+		//printf("end   "); 
+		break;
 	}
 
-	printf("\n");
+	//printf("\n");
 }
 
 void onMouseMotion(int x, int y)
 {
-	printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
+	//printf("%18s(): (%d, %d) mouse move\n", __FUNCTION__, x, y);
+}
+
+void onPassiveMouseMotion(int x, int y) {
+	// move the position of spot light
+	if (spotOn == 1) {
+		float wx = (float)x*2.0 / (float)windowWidth - 1.0;
+		float wy = -(float)y*2.0 / (float)windowHeight + 1.0;
+		// printf("new x = %f, y= %f\n", wx, wy);
+		lightsource[3].position[0] = wx;
+		lightsource[3].position[1] = wy;
+	}
+
 }
 
 void onKeyboard(unsigned char key, int x, int y)
@@ -677,6 +723,9 @@ void onKeyboard(unsigned char key, int x, int y)
 		printf("press 'r' to toggle auto rotation\n");
 		printf("press 'v' 'b' to change the rotatation speed\n");
 		printf("use arrow buttom to move the point light\n");
+		printf("hover mouse to move the spot light\n");
+		printf("click mouse to tune EXP\n");
+		printf("scroll mouse to tune CUT_OFF_ANGLE\n");
 		printf("----------Help Menu----------\n");
 		break;
 	case GLUT_KEY_q:
@@ -771,6 +820,8 @@ void onKeyboardSpecial(int key, int x, int y) {
 
 void onWindowReshape(int width, int height)
 {
+	windowHeight = height;
+	windowWidth = width;
 	printf("%18s(): %dx%d\n", __FUNCTION__, width, height);
 }
 
@@ -781,8 +832,9 @@ int main(int argc, char **argv)
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 
 	// create window
+	windowHeight = windowWidth = 800;
 	glutInitWindowPosition(500, 100);
-	glutInitWindowSize(800, 800);
+	glutInitWindowSize(windowWidth, windowHeight);
 	glutCreateWindow("10420 CS550000 CG HW2 X1052165 Yuchun Jin");
 
 	glewInit();
@@ -806,6 +858,7 @@ int main(int argc, char **argv)
 	glutSpecialFunc(onKeyboardSpecial);
 	glutMouseFunc(onMouse);
 	glutMotionFunc(onMouseMotion);
+	glutPassiveMotionFunc(onPassiveMouseMotion);
 	glutReshapeFunc(onWindowReshape);
 
 	// set up lighting parameters

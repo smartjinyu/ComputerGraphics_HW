@@ -90,22 +90,19 @@ vec4 calcPointLight(LightSourceParameters lightSource){
 vec4 calcSpotLight(LightSourceParameters lightSource){
 	vec4 color = vec4(0.0,0.0,0.0,0.0);
 	float distance = length(lightSource.position.xyz-vv4position.xyz);
-	float attenuation = 1.0f/(lightSource.constantAttenuation 
-				+ lightSource.linearAttenuation * distance 
-				+ lightSource.quadraticAttenuation * distance * distance);
 	vec3 L = normalize(lightSource.position.xyz-vv4position.xyz);
 	float theta = dot(L,normalize(-lightSource.spotDirection));
 	float effect = pow(max(dot(L,-lightSource.spotDirection),0.0),lightSource.spotExponent);
 	if(theta >= lightSource.spotCosCutoff){
 		if(diffuseOn == 1){
 			vec4 diffuse = lightSource.diffuse * Material.diffuse * max(dot(L,N),0.0);
-			color += diffuse * effect * attenuation;
+			color += diffuse * effect;
 		}
 		if(specularOn == 1){
 			vec3 R = normalize(reflect(-L,N));
-			float spec = pow(max(dot(V,R),0.0),65.0);
+			float spec = pow(max(dot(V,R),0.0),20.0);
 			vec4 specular = Material.specular * lightSource.specular * spec;
-			color += specular * effect * attenuation;
+			color += specular * effect;
 		}
 
 	}
