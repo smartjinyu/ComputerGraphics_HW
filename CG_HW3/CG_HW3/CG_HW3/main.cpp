@@ -68,11 +68,15 @@
 # define GLUT_KEY_b 0x0062
 #endif
 
+#ifndef GLUT_KEY_c
+# define GLUT_KEY_c 0x0063
+#endif
 
 #ifndef max
 # define max(a,b) (((a)>(b))?(a):(b))
 # define min(a,b) (((a)<(b))?(a):(b))
 #endif
+
 
 // Shader attributes
 GLint iLocPosition;
@@ -108,6 +112,12 @@ Vector3 upVec = Vector3(0, 1, 0);// in fact, this vector should be called as P1P
 
 int ambientOn = 1, diffuseOn = 1, specularOn = 1;
 int directionalOn = 1, pointOn = 0, spotOn = 0;
+/*
+spotOn = 0, no spot light
+spotOn = 1, normal spot light
+spotOn = 2, directional spot light
+spotOn = 3, point spot light
+*/
 
 int autoRotateMode = 0;
 float rotateSpeed = 300.0; // it is the reciprocal of actual rotate speed
@@ -500,6 +510,9 @@ void setLightingSource() {
 	lightsource[3].spotExponent = 0.5;
 	lightsource[3].spotCutoff = 45;
 	lightsource[3].spotCosCutoff = 0.99; // 1/12 pi
+	lightsource[3].constantAttenuation = 1;
+	lightsource[3].linearAttenuation = 4.5 / PLRange;
+	lightsource[3].quadraticAttenuation = 75 / (PLRange*PLRange);
 
 }
 
@@ -597,6 +610,9 @@ void setShaders()
 	glUniform4fv(glGetUniformLocation(p, "LightSource[3].diffuse"), 1, lightsource[3].diffuse);
 	glUniform4fv(glGetUniformLocation(p, "LightSource[3].specular"), 1, lightsource[3].specular);
 	glUniform3fv(glGetUniformLocation(p, "LightSource[3].spotDirection"), 1, lightsource[3].spotDirection);
+	glUniform1f(glGetUniformLocation(p, "LightSource[3].constantAttenuation"), lightsource[2].constantAttenuation);
+	glUniform1f(glGetUniformLocation(p, "LightSource[3].linearAttenuation"), lightsource[2].linearAttenuation);
+	glUniform1f(glGetUniformLocation(p, "LightSource[3].quadraticAttenuation"), lightsource[2].quadraticAttenuation);
 	glUniform1f(iLocSpotExponent, lightsource[3].spotExponent);
 	glUniform1f(iLocSpotCutoff, lightsource[3].spotCutoff);
 	glUniform1f(iLocSpotCosCutoff, lightsource[3].spotCosCutoff);
@@ -628,7 +644,9 @@ void onMouse(int who, int state, int x, int y)
 		}
 		break;
 	}
-	case GLUT_MIDDLE_BUTTON: printf("middle button "); break;
+	case GLUT_MIDDLE_BUTTON: 
+		//printf("middle button "); 
+		break;
 	case GLUT_RIGHT_BUTTON:  
 		//printf("right button  "); 
 		if (spotOn == 1) {
@@ -677,7 +695,7 @@ void onMouseMotion(int x, int y)
 
 void onPassiveMouseMotion(int x, int y) {
 	// move the position of spot light
-	if (spotOn == 1) {
+	if (spotOn != 0) {
 		float wx = (float)x*2.0 / (float)windowWidth - 1.0;
 		float wy = -(float)y*2.0 / (float)windowHeight + 1.0;
 		// printf("new x = %f, y= %f\n", wx, wy);
@@ -689,7 +707,7 @@ void onPassiveMouseMotion(int x, int y) {
 
 void onKeyboard(unsigned char key, int x, int y)
 {
-	//printf("%18s(): (%d, %d) key: %c(0x%02X) ", __FUNCTION__, x, y, key, key);
+	printf("%18s(): (%d, %d) key: %c(0x%02X) ", __FUNCTION__, x, y, key, key);
 	switch (key)
 	{
 	case GLUT_KEY_ESC: /* the Esc key */
@@ -722,6 +740,7 @@ void onKeyboard(unsigned char key, int x, int y)
 		printf("press 'z' 'x' to change model\n");
 		printf("press 'r' to toggle auto rotation\n");
 		printf("press 'v' 'b' to change the rotatation speed\n");
+		printf("press 'c' to change the spot light into another type\n");
 		printf("use arrow buttom to move the point light\n");
 		printf("hover mouse to move the spot light\n");
 		printf("click mouse to tune EXP\n");
@@ -779,6 +798,23 @@ void onKeyboard(unsigned char key, int x, int y)
 			printf("Slow down the auot rotation\n");
 		}
 		break;
+	case GLUT_KEY_c:
+		switch (spotOn) {
+		case 1:
+			spotOn = 2;
+			printf("change spot light into directional mode\n");
+			break;
+		case 2:
+			spotOn = 3;
+			printf("change spot light into point mode\n");
+			break;
+		case 3:
+			spotOn = 1;
+			printf("change spot light into normal spotlight mode\n");
+			break;
+		}
+		break;
+
 	}
 	//printf("\n");
 }
