@@ -72,6 +72,11 @@
 # define GLUT_KEY_c 0x0063
 #endif
 
+#ifndef GLUT_KEY_f
+# define GLUT_KEY_f 0x0066
+#endif
+
+
 #ifndef max
 # define max(a,b) (((a)>(b))?(a):(b))
 # define min(a,b) (((a)<(b))?(a):(b))
@@ -89,6 +94,7 @@ GLint iLocDirectionalOn, iLocPointOn, iLocSpotOn;
 GLint iLocNormalTransform, iLocModelTransform, iLocViewTransform;
 GLint iLocEyePosition;
 GLint iLocPointPosition, iLocSpotPosition, iLocSpotExponent, iLocSpotCutoff, iLocSpotCosCutoff;
+GLint iLocPerPixelLighting;
 
 #define numOfModels 5
 char filename[numOfModels][256] = { "NormalModels/High/dragon10KN.obj",
@@ -111,13 +117,14 @@ Vector3 centerPos = Vector3(0, 0, 0);
 Vector3 upVec = Vector3(0, 1, 0);// in fact, this vector should be called as P1P3
 
 int ambientOn = 1, diffuseOn = 1, specularOn = 1;
-int directionalOn = 1, pointOn = 0, spotOn = 0;
+int directionalOn = 0, pointOn = 0, spotOn = 0;
 /*
 spotOn = 0, no spot light
 spotOn = 1, normal spot light
 spotOn = 2, directional spot light
 spotOn = 3, point spot light
 */
+int perPixelOn = 0; // 1: enable per pixel lighting
 
 int autoRotateMode = 0;
 float rotateSpeed = 300.0; // it is the reciprocal of actual rotate speed
@@ -268,7 +275,7 @@ void traverseColorModel()
 		}
 		offsetIndex += 9 * group->numtriangles;
 		group = group->next;
-		printf("offsetIndex = %d\n", offsetIndex);
+		// printf("offsetIndex = %d\n", offsetIndex);
 	}
 
 
@@ -381,6 +388,8 @@ void onDisplay(void)
 	glUniform1i(iLocDirectionalOn, directionalOn);
 	glUniform1i(iLocPointOn, pointOn);
 	glUniform1i(iLocSpotOn, spotOn);
+
+	glUniform1i(iLocPerPixelLighting, perPixelOn);
 
 	// matrix parameters
 	passMatrixToShader(iLocMVP, MVP);
@@ -574,6 +583,7 @@ void setShaders()
 	iLocModelTransform = glGetUniformLocation(p, "ModelTransMatrix");
 	iLocViewTransform = glGetUniformLocation(p, "ViewTransMatrix");
 	iLocEyePosition = glGetUniformLocation(p, "eyePos");
+	iLocPerPixelLighting = glGetUniformLocation(p, "perPixelOn");
 
 	iLocPointPosition = glGetUniformLocation(p, "LightSource[2].position");
 	iLocSpotPosition = glGetUniformLocation(p, "LightSource[3].position");
@@ -644,10 +654,10 @@ void onMouse(int who, int state, int x, int y)
 		}
 		break;
 	}
-	case GLUT_MIDDLE_BUTTON: 
+	case GLUT_MIDDLE_BUTTON:
 		//printf("middle button "); 
 		break;
-	case GLUT_RIGHT_BUTTON:  
+	case GLUT_RIGHT_BUTTON:
 		//printf("right button  "); 
 		if (spotOn == 1) {
 			lightsource[3].spotExponent -= 0.1;
@@ -655,14 +665,14 @@ void onMouse(int who, int state, int x, int y)
 		}
 
 		break;
-	case GLUT_WHEEL_UP: 
+	case GLUT_WHEEL_UP:
 		if (spotOn == 1) {
 			lightsource[3].spotCosCutoff -= 0.003;
 			printf("Turn CUT_OFF_ANGLE up\n");
 		}
 		//printf("wheel up      "); 
 		break;
-	case GLUT_WHEEL_DOWN:    
+	case GLUT_WHEEL_DOWN:
 		//printf("wheel down    "); 
 		if (spotOn == 1) {
 			lightsource[3].spotCosCutoff += 0.003;
@@ -670,17 +680,17 @@ void onMouse(int who, int state, int x, int y)
 		}
 
 		break;
-	default:                 
+	default:
 		//printf("0x%02X          ", who); 
 		break;
 	}
 
 	switch (state)
 	{
-	case GLUT_DOWN: 
+	case GLUT_DOWN:
 		//printf("start "); 
 		break;
-	case GLUT_UP:   
+	case GLUT_UP:
 		//printf("end   "); 
 		break;
 	}
@@ -707,7 +717,7 @@ void onPassiveMouseMotion(int x, int y) {
 
 void onKeyboard(unsigned char key, int x, int y)
 {
-	printf("%18s(): (%d, %d) key: %c(0x%02X) ", __FUNCTION__, x, y, key, key);
+	//printf("%18s(): (%d, %d) key: %c(0x%02X) ", __FUNCTION__, x, y, key, key);
 	switch (key)
 	{
 	case GLUT_KEY_ESC: /* the Esc key */
@@ -814,7 +824,15 @@ void onKeyboard(unsigned char key, int x, int y)
 			break;
 		}
 		break;
-
+	case GLUT_KEY_f:
+		perPixelOn = (perPixelOn + 1) % 2;
+		if (perPixelOn == 0) {
+			printf("switch to vertex lighting\n");
+		}
+		else {
+			printf("switch to per pixel lighting\n");
+		}
+		break;
 	}
 	//printf("\n");
 }
