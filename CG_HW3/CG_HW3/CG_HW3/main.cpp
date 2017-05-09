@@ -463,13 +463,13 @@ void setLightingSource() {
 	lightsource[1].ambient[1] = 0;
 	lightsource[1].ambient[2] = 0;
 	lightsource[1].ambient[3] = 1;
-	lightsource[1].diffuse[0] = 1;
-	lightsource[1].diffuse[1] = 1;
-	lightsource[1].diffuse[2] = 1;
+	lightsource[1].diffuse[0] = 0.8;
+	lightsource[1].diffuse[1] = 0.8;
+	lightsource[1].diffuse[2] = 0.8;
 	lightsource[1].diffuse[3] = 1;
-	lightsource[1].specular[0] = 1;
-	lightsource[1].specular[1] = 1;
-	lightsource[1].specular[2] = 1;
+	lightsource[1].specular[0] = 0.8;
+	lightsource[1].specular[1] = 0.8;
+	lightsource[1].specular[2] = 0.8;
 	lightsource[1].specular[3] = 1;
 	lightsource[1].constantAttenuation = 1;
 	lightsource[1].linearAttenuation = 4.5 / PLRange;
@@ -484,13 +484,13 @@ void setLightingSource() {
 	lightsource[2].ambient[1] = 0;
 	lightsource[2].ambient[2] = 0;
 	lightsource[2].ambient[3] = 1;
-	lightsource[2].diffuse[0] = 1;
-	lightsource[2].diffuse[1] = 1;
-	lightsource[2].diffuse[2] = 1;
+	lightsource[2].diffuse[0] = 0.8;
+	lightsource[2].diffuse[1] = 0.8;
+	lightsource[2].diffuse[2] = 0.8;
 	lightsource[2].diffuse[3] = 1;
-	lightsource[2].specular[0] = 1;
-	lightsource[2].specular[1] = 1;
-	lightsource[2].specular[2] = 1;
+	lightsource[2].specular[0] = 0.8;
+	lightsource[2].specular[1] = 0.8;
+	lightsource[2].specular[2] = 0.8;
 	lightsource[2].specular[3] = 1;
 	lightsource[2].constantAttenuation = 1;
 	lightsource[2].linearAttenuation = 4.5 / PLRange;
@@ -505,13 +505,13 @@ void setLightingSource() {
 	lightsource[3].ambient[1] = 0;
 	lightsource[3].ambient[2] = 0;
 	lightsource[3].ambient[3] = 1;
-	lightsource[3].diffuse[0] = 1;
-	lightsource[3].diffuse[1] = 1;
-	lightsource[3].diffuse[2] = 1;
+	lightsource[3].diffuse[0] = 0.8;
+	lightsource[3].diffuse[1] = 0.8;
+	lightsource[3].diffuse[2] = 0.8;
 	lightsource[3].diffuse[3] = 1;
-	lightsource[3].specular[0] = 1;
-	lightsource[3].specular[1] = 1;
-	lightsource[3].specular[2] = 1;
+	lightsource[3].specular[0] = 0.8;
+	lightsource[3].specular[1] = 0.8;
+	lightsource[3].specular[2] = 0.8;
 	lightsource[3].specular[3] = 1;
 	lightsource[3].spotDirection[0] = 0;
 	lightsource[3].spotDirection[1] = 0;
@@ -751,6 +751,7 @@ void onKeyboard(unsigned char key, int x, int y)
 		printf("press 'r' to toggle auto rotation\n");
 		printf("press 'v' 'b' to change the rotatation speed\n");
 		printf("press 'c' to change the spot light into another type\n");
+		printf("press 'f' to toggle per-pixel rendering\n");
 		printf("use arrow buttom to move the point light\n");
 		printf("hover mouse to move the spot light\n");
 		printf("click mouse to tune EXP\n");
@@ -768,7 +769,12 @@ void onKeyboard(unsigned char key, int x, int y)
 		printStatus();
 		break;
 	case GLUT_KEY_e:
-		spotOn = (spotOn + 1) % 2;
+		if (spotOn == 0) {
+			spotOn = 1;
+		}
+		else {
+			spotOn = 0;
+		}
 		printf("Turn %s spot light\n", spotOn ? "ON" : "OFF");
 		printStatus();
 		break;
@@ -889,7 +895,7 @@ int main(int argc, char **argv)
 	windowHeight = windowWidth = 800;
 	glutInitWindowPosition(500, 100);
 	glutInitWindowSize(windowWidth, windowHeight);
-	glutCreateWindow("10420 CS550000 CG HW2 X1052165 Yuchun Jin");
+	glutCreateWindow("10420 CS550000 CG HW3 X1052165 Yuchun Jin");
 
 	glewInit();
 	if (glewIsSupported("GL_VERSION_2_0")) {

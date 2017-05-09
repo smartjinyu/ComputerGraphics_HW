@@ -130,9 +130,7 @@ vec4 calcSpotLight(LightSourceParameters lightSource){
 			color += specular;
 
 		}
-
 	}
-
 	return color;
 }
 
