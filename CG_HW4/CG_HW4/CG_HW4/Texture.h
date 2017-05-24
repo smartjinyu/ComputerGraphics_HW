@@ -10,12 +10,11 @@ extern "C" {
 
 GLuint TextureNumber;
 
-#pragma pack(push)
 #pragma pack(2)
 typedef struct _FileHeader
 {
 	unsigned char ID[2];
-	unsigned long FileSizepr;
+	unsigned long FileSize;
 	unsigned long Reserved;
 	unsigned long DataOffset;
 } FileHeader;
@@ -34,7 +33,8 @@ typedef struct _InfoHeader
 	unsigned long UsedColor;
 	unsigned long ImportantColors;
 } InfoHeader;
-#pragma pack(pop)
+
+#pragma pack()
 
 #ifdef __cplusplus
 }
