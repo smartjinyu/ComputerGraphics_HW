@@ -61,9 +61,9 @@ GLint iLocTexCoord;
 GLint texture_wrap_mode = GL_REPEAT;
 GLint texture_mag_filter = GL_LINEAR;
 GLint texture_min_filter = GL_LINEAR;
-int MAG_F = 0;
-int MIN_F = 0;
-int W_F = 0;
+int MAG_F = 0; // 0 nearest, 1 linear
+int MIN_F = 0; // 0 nearest, 1 linear
+int W_F = 0; // 0 clamp, 1 repeat
 // window size
 const unsigned int uiWidth = 500;
 const unsigned int uiHeight = 500;
@@ -897,7 +897,14 @@ void renderScene(void)
 
 		// texture wrap mode s/t
 		// TODO: texture wrap modes are defined here
-
+		if (W_F) {
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		}
+		else {
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		}
 
 		// bind texture material group by group
 		// TODO: bind texture here
@@ -1003,12 +1010,32 @@ void processNormalKeys(unsigned char key, int x, int y) {
 		break;
 	case 'w':case 'W':
 		W_F = !W_F;
+		if (W_F) {
+			printf("Texture wrap mode has been switched to repeat\n");
+		}
+		else {
+			printf("Texture wrap mode has been switched to clamp\n");
+
+		}
 		break;
 	case 'M':
 		MAG_F = !MAG_F;
+		if (MAG_F) {
+			printf("Texture filter magnify mode has been switched to linear\n");
+		}
+		else {
+			printf("Texture filter magnify mode has been switched to nearest\n");
+		}
 		break;
 	case 'm':
 		MIN_F = !MIN_F;
+		if (MIN_F) {
+			printf("Texture filter minify mode has been switched to linear\n");
+		}
+		else {
+			printf("Texture filter minify mode has been switched to nearest\n");
+		}
+
 		break;
 
 	case 'Z': case 'z':
