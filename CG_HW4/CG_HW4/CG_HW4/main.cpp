@@ -63,7 +63,7 @@ GLint texture_mag_filter = GL_LINEAR;
 GLint texture_min_filter = GL_LINEAR;
 int MAG_F = 0; // 0 nearest, 1 linear
 int MIN_F = 0; // 0 nearest, 1 linear
-int W_F = 0; // 0 clamp, 1 repeat
+int W_F = 0; // 0 clamp_to_edge, 1 repeat
 // window size
 const unsigned int uiWidth = 500;
 const unsigned int uiHeight = 500;
@@ -346,15 +346,12 @@ void TextureModel()
 
 			//cout<<OBJ->texcoords[indt1*2]<<" "<<OBJ->texcoords[indt1*2+1]<<" "<<OBJ->texcoords[indt1*2+2]<<" "<<OBJ->texcoords[indt1*2+3]<<" "<<OBJ->texcoords[indt1*2+4]<<" "<<OBJ->texcoords[indt1*2+5]<<endl;
 			// TODO: texture coordinates should be aligned by yourself
-			vtextures[gCount][i * 9] = OBJ->texcoords[indt1 * 3];
-			vtextures[gCount][i * 9 + 1] = OBJ->texcoords[indt1 * 3 + 1];
-			vtextures[gCount][i * 9 + 2] = OBJ->texcoords[indt1 * 3 + 2];
-			vtextures[gCount][i * 9 + 3] = OBJ->texcoords[indt2 * 3];
-			vtextures[gCount][i * 9 + 4] = OBJ->texcoords[indt2 * 3 + 1];
-			vtextures[gCount][i * 9 + 5] = OBJ->texcoords[indt2 * 3 + 2];
-			vtextures[gCount][i * 9 + 6] = OBJ->texcoords[indt3 * 3];
-			vtextures[gCount][i * 9 + 7] = OBJ->texcoords[indt3 * 3 + 1];
-			vtextures[gCount][i * 9 + 8] = OBJ->texcoords[indt3 * 3 + 2];
+			vtextures[gCount][i * 6] = OBJ->texcoords[indt1 * 2];
+			vtextures[gCount][i * 6 + 1] = OBJ->texcoords[indt1 * 2 + 1];
+			vtextures[gCount][i * 6 + 2] = OBJ->texcoords[indt2 * 2];
+			vtextures[gCount][i * 6 + 3] = OBJ->texcoords[indt2 * 2 + 1];
+			vtextures[gCount][i * 6 + 4] = OBJ->texcoords[indt3 * 2];
+			vtextures[gCount][i * 6 + 5] = OBJ->texcoords[indt3 * 2 + 1];
 
 		}
 		group = group->next;
@@ -902,12 +899,14 @@ void renderScene(void)
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		}
 		else {
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		}
 
 		// bind texture material group by group
 		// TODO: bind texture here
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texNum[gCount]);
 
 		// draw arrays
 		glDrawArrays(GL_TRIANGLES, 0, group->numtriangles * 3);
@@ -1014,7 +1013,7 @@ void processNormalKeys(unsigned char key, int x, int y) {
 			printf("Texture wrap mode has been switched to repeat\n");
 		}
 		else {
-			printf("Texture wrap mode has been switched to clamp\n");
+			printf("Texture wrap mode has been switched to clamp_to_edge\n");
 
 		}
 		break;
