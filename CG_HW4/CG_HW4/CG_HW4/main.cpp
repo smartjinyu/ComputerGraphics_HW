@@ -113,7 +113,7 @@ GLint iPV;
 
 GLint iModelKA, iModelKD, iModelKS;
 GLint iModelShininess;
-
+GLint iLocUs2dtexture;
 
 typedef struct LightLocate
 {
@@ -872,7 +872,7 @@ void renderScene(void)
 		glVertexAttribPointer(iLocPosition, 3, GL_FLOAT, GL_FALSE, 0, vertices[gCount]);
 		glVertexAttribPointer(iLocNormal, 3, GL_FLOAT, GL_FALSE, 0, vnormals[gCount]);
 		// TODO: bind texture vertex attribute pointer here
-		glVertexAttribPointer(iLocTexCoord, 3, GL_FLOAT, GL_FALSE, 0, vtextures[gCount]);
+		glVertexAttribPointer(iLocTexCoord, 2, GL_FLOAT, GL_FALSE, 0, vtextures[gCount]);
 		// texture mag/min filter
 		// TODO: texture mag/min filters are defined here
 		if (MAG_F) {
@@ -905,9 +905,9 @@ void renderScene(void)
 
 		// bind texture material group by group
 		// TODO: bind texture here
-		glActiveTexture(GL_TEXTURE0);
+		// glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texNum[gCount]);
-
+		// glUniform1i(iLocUs2dtexture, 0);
 		// draw arrays
 		glDrawArrays(GL_TRIANGLES, 0, group->numtriangles * 3);
 
@@ -1160,6 +1160,8 @@ void setShaders() {
 	iModelShininess = glGetUniformLocation(p, "Material.shininess");
 	iLoceyepos = glGetUniformLocation(p, "eyepos");
 	iPV = glGetUniformLocation(p, "PV_FLAG");
+	iLocUs2dtexture = glGetUniformLocation(p, "us2dtexture");
+
 	for (int i = 0; i < 3; i++)
 	{
 		char* s1 = "LightSource[";
@@ -1290,7 +1292,7 @@ int main(int argc, char **argv)
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(0, 0);
 	glutInitWindowSize(uiWidth, uiHeight);
-	glutCreateWindow("CS550000 CGHW4 TA");
+	glutCreateWindow("CS550000 CGHW4 X1052165 Yuchun-Jin");
 	glutDisplayFunc(renderScene);
 	glutIdleFunc(renderScene);
 	glutReshapeFunc(changeSize);

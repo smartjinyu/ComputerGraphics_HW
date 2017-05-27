@@ -37,7 +37,8 @@ varying vec3 vv3normal, vv3halfVector;
 varying vec2 v2texCoord;
 varying vec4 vv4color, vv4vertice;
 uniform int PV_FLAG;
-
+uniform int uiisTextureMapping;
+uniform sampler2D us2dtexture;
 
 void main() {
 	vec4 Diffuse[3], Ambient[3];
@@ -127,4 +128,10 @@ void main() {
 		gl_FragColor = color;
 	else
 		gl_FragColor = vv4color;	
+
+	if(uiisTextureMapping == 1){
+		// do texture mapping
+		vec4 v4textcolor = texture2D(us2dtexture,v2texCoord);
+		gl_FragColor = v4textcolor * gl_FragColor;
+	}
 }
