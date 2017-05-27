@@ -113,7 +113,6 @@ GLint iPV;
 
 GLint iModelKA, iModelKD, iModelKS;
 GLint iModelShininess;
-GLint iLocUs2dtexture;
 
 typedef struct LightLocate
 {
@@ -905,9 +904,7 @@ void renderScene(void)
 
 		// bind texture material group by group
 		// TODO: bind texture here
-		// glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texNum[gCount]);
-		// glUniform1i(iLocUs2dtexture, 0);
 		// draw arrays
 		glDrawArrays(GL_TRIANGLES, 0, group->numtriangles * 3);
 
@@ -1160,7 +1157,6 @@ void setShaders() {
 	iModelShininess = glGetUniformLocation(p, "Material.shininess");
 	iLoceyepos = glGetUniformLocation(p, "eyepos");
 	iPV = glGetUniformLocation(p, "PV_FLAG");
-	iLocUs2dtexture = glGetUniformLocation(p, "us2dtexture");
 
 	for (int i = 0; i < 3; i++)
 	{
